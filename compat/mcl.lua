@@ -1,0 +1,73 @@
+--[[
+	pixie - Compatibility Adaptor: Voxelibre & Mineclonia
+]]
+
+local compat = pixie.compat
+
+-- Flora
+compat.register_flora("^mcl_flowers:")
+compat.register_flora("^mcl_crimson:")
+compat.register_flora("^mcl_nether:.*fungus")
+compat.register_flora("mcl_core:chorus_flower")
+compat.register_flora("^mcl_mushrooms:")
+
+-- Ores
+compat.register_ore("mcl_core:stone_with_diamond", "Diamond Ore", 100)
+compat.register_ore("mcl_core:deepslate_with_diamond", "Deepslate Diamond Ore", 100)
+compat.register_ore("mcl_nether:ancient_debris", "Ancient Debris", 95)
+compat.register_ore("mcl_core:stone_with_emerald", "Emerald Ore", 85)
+compat.register_ore("mcl_core:deepslate_with_emerald", "Deepslate Emerald Ore", 85)
+compat.register_ore("mcl_core:stone_with_gold", "Gold Ore", 75)
+compat.register_ore("mcl_core:deepslate_with_gold", "Deepslate Gold Ore", 75)
+compat.register_ore("mcl_nether:quartz_ore", "Nether Quartz Ore", 70)
+compat.register_ore("mcl_core:stone_with_lapis", "Lapis Lazuli Ore", 60)
+compat.register_ore("mcl_core:deepslate_with_lapis", "Deepslate Lapis Ore", 60)
+compat.register_ore("mcl_core:stone_with_redstone", "Redstone Ore", 55)
+compat.register_ore("mcl_core:deepslate_with_redstone", "Deepslate Redstone Ore", 55)
+compat.register_ore("mcl_core:stone_with_iron", "Iron Ore", 50)
+compat.register_ore("mcl_core:deepslate_with_iron", "Deepslate Iron Ore", 50)
+compat.register_ore("mcl_core:stone_with_copper", "Copper Ore", 45)
+compat.register_ore("mcl_core:deepslate_with_copper", "Deepslate Copper Ore", 45)
+compat.register_ore("mcl_core:stone_with_coal", "Coal Ore", 30)
+compat.register_ore("mcl_core:deepslate_with_coal", "Deepslate Coal Ore", 30)
+
+-- Hostile Mobs
+compat.register_hostile("mobs_mc:creeper", "Creeper")
+compat.register_hostile("mobs_mc:zombie", "Zombie")
+compat.register_hostile("mobs_mc:skeleton", "Skeleton")
+compat.register_hostile("mobs_mc:spider", "Spider")
+compat.register_hostile("mobs_mc:cave_spider", "Cave Spider")
+compat.register_hostile("mobs_mc:witch", "Witch")
+compat.register_hostile("mobs_mc:enderman", "Enderman")
+compat.register_hostile("mobs_mc:blaze", "Blaze")
+compat.register_hostile("mobs_mc:ghast", "Ghast")
+compat.register_hostile("mobs_mc:wither_skeleton", "Wither Skeleton")
+compat.register_hostile("mobs_mc:wither", "Wither")
+compat.register_hostile("mobs_mc:warden", "Warden")
+compat.register_hostile("mobs_mc:phantom", "Phantom")
+compat.register_hostile("mobs_mc:drowned", "Drowned")
+compat.register_hostile("mobs_mc:husk", "Husk")
+compat.register_hostile("mobs_mc:stray", "Stray")
+compat.register_hostile("mobs_mc:slime", "Slime")
+compat.register_hostile("mobs_mc:magma_cube", "Magma Cube")
+compat.register_hostile("mobs_mc:piglin_brute", "Piglin Brute")
+compat.register_hostile("mobs_mc:hoglin", "Hoglin")
+compat.register_hostile("mobs_mc:zoglin", "Zoglin")
+compat.register_hostile("mobs_mc:pillager", "Pillager")
+compat.register_hostile("mobs_mc:vindicator", "Vindicator")
+compat.register_hostile("mobs_mc:evoker", "Evoker")
+compat.register_hostile("mobs_mc:ravager", "Ravager")
+compat.register_hostile("mobs_mc:shulker", "Shulker")
+compat.register_hostile("mobs_mc:guardian", "Guardian")
+compat.register_hostile("mobs_mc:elder_guardian", "Elder Guardian")
+
+-- Spawning surfaces
+compat.register_spawn_node("mcl_core:dirt_with_grass")
+compat.register_spawn_node("mcl_core:leaves")
+compat.register_spawn_node("mcl_flowers:poppy")
+compat.register_spawn_node("mcl_flowers:dandelion")
+
+-- Loot drops on defeat (via x_mob_core)
+compat.register_drop({ name = "mcl_core:diamond", min = 1, max = 1, chance = 0.20 })
+compat.register_drop({ name = "mcl_nether:glowstone_dust", min = 1, max = 3, chance = 0.60 })
+compat.register_drop({ name = "mcl_flowers:poppy", min = 1, max = 2, chance = 0.75 })
