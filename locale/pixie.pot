@@ -1,0 +1,230 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the pixie package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: pixie\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-08 16:31-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: bonding.lua:62
+msgid "Ancient Guardian"
+msgstr ""
+
+#: bonding.lua:64
+msgid "Loyal Companion"
+msgstr ""
+
+#: bonding.lua:66
+msgid "Fledgling"
+msgstr ""
+
+#: bonding.lua:179 bonding.lua:492 bonding.lua:748 bonding.lua:897
+#: bonding.lua:963
+msgid "Mystical Pixie"
+msgstr ""
+
+#: bonding.lua:349
+msgid ""
+"You cut the magical bond loose. Your pixie companion returns freely to the "
+"wild!"
+msgstr ""
+
+#: bonding.lua:481
+msgid ""
+"The Fairy Whistle plays a clear, ethereal tune, but no companion answers."
+msgstr ""
+
+#: bonding.lua:501
+msgid ""
+"✦ You play a cheerful melody. @1 happily performs an aerial trick for you! ✦"
+msgstr ""
+
+#: bonding.lua:630
+msgid ""
+"✦ @1 heard the sweet call of your Fairy Whistle from (@2, @3, @4) (@5m away) "
+"and rushed to your side! ✦"
+msgstr ""
+
+#: bonding.lua:634
+msgid ""
+"✦ @1 heard the sweet call of your Fairy Whistle and rushed to your side! ✦"
+msgstr ""
+
+#: bonding.lua:751
+msgid "✦ Your @1 (@2) sacrificed its life to save you from death! ✦"
+msgstr ""
+
+#: bonding.lua:876
+msgid "Manage your bonded pixie companion (status, release, rename, nametag)"
+msgstr ""
+
+#: bonding.lua:880
+msgid "Player not found."
+msgstr ""
+
+#: bonding.lua:887
+msgid "Magical bond severed. Your pixie companion has returned to the wild."
+msgstr ""
+
+#: bonding.lua:889 bonding.lua:931 bonding.lua:937 bonding.lua:973
+msgid "You do not currently have a bonded pixie companion."
+msgstr ""
+
+#: bonding.lua:908
+msgid "Visible"
+msgstr ""
+
+#: bonding.lua:908
+msgid "Hidden"
+msgstr ""
+
+#: bonding.lua:916
+msgid "Guarding at (@1, @2, @3) — @4m away"
+msgstr ""
+
+#: bonding.lua:918 entities.lua:1683
+msgid "Guarding"
+msgstr ""
+
+#: bonding.lua:921 entities.lua:1686
+msgid "Following"
+msgstr ""
+
+#: bonding.lua:928
+msgid ""
+"You are bonded with @1 (Tier: @2 | Bond: @3 | Status: @4 | HP: @5/30 | "
+"Nametag: @6)."
+msgstr ""
+
+#: bonding.lua:949
+msgid "Usage: /pixie nametag [show|hide|toggle]"
+msgstr ""
+
+#: bonding.lua:965
+msgid "Nametag for @1 is now visible."
+msgstr ""
+
+#: bonding.lua:967
+msgid "Nametag for @1 is now completely hidden."
+msgstr ""
+
+#: bonding.lua:987
+msgid "Custom name cleared. Pixie companion has returned to its default name."
+msgstr ""
+
+#: bonding.lua:991
+msgid "Please provide a valid name (1-32 characters)."
+msgstr ""
+
+#: bonding.lua:1005
+msgid "Your pixie companion has been renamed to '@1'."
+msgstr ""
+
+#: bonding.lua:1007
+msgid ""
+"Usage: /pixie release, /pixie rename <name>, /pixie nametag [show|hide|"
+"toggle], or /pixie status"
+msgstr ""
+
+#: dynamic_light.lua:17
+msgid "Pixie Dynamic Aura Light"
+msgstr ""
+
+#: entities.lua:433
+msgid "Pixie"
+msgstr ""
+
+#: entities.lua:435
+msgid ""
+"✦ Your companion @1 has grown into a Loyal Companion! Threat radar and "
+"triage healing unlocked. ✦"
+msgstr ""
+
+#: entities.lua:442
+msgid ""
+"✦ Your companion @1 has ascended to an Ancient Guardian! Subterranean ore "
+"sensing unlocked. ✦"
+msgstr ""
+
+#: entities.lua:562
+msgid "⚠ Pixie alerts: hostile @1 lurking nearby! ⚠"
+msgstr ""
+
+#: entities.lua:619
+msgid "✦ Pixie excitedly senses rare @1 hidden nearby! ✦"
+msgstr ""
+
+#: entities.lua:621
+msgid "✦ Pixie senses @1 hidden nearby! ✦"
+msgstr ""
+
+#: entities.lua:1681
+msgid "Guarding at (@1, @2, @3)"
+msgstr ""
+
+#: entities.lua:1693
+msgid ""
+"@1 [@2] (Bonded to @3)\n"
+"Status: @4 | Health: @5/30 | Bond: @6"
+msgstr ""
+
+#: entities.lua:1700
+msgid "Wild"
+msgstr ""
+
+#: entities.lua:2084
+msgid "@1 Pixie is now bonded to you!"
+msgstr ""
+
+#: entities.lua:2087
+msgid ""
+"The Pixie gazes at you timidly. Offer it a flower, honey, or mese crystal "
+"fragment!"
+msgstr ""
+
+#: entities.lua:2117
+msgid "You feed a fresh treat to @1. Vitality restored to @2/@3 HP!"
+msgstr ""
+
+#: entities.lua:2127
+msgid "@1 happily performs a joyful trick for you! (Vitality: @2/@3 HP)"
+msgstr ""
+
+#: entities.lua:2142
+msgid "✦ Pixie will now guard at (@1, @2, @3). ✦"
+msgstr ""
+
+#: entities.lua:2149
+msgid "✦ Pixie is now following you! ✦"
+msgstr ""
+
+#: whistle.lua:75
+msgid "✦ Your Fairy Whistle has dissolved into delicate fairy dust! ✦"
+msgstr ""
+
+#: whistle.lua:84
+msgid "Fairy Whistle"
+msgstr ""
+
+#: whistle.lua:85
+msgid "Right-click to call your guarding pixie companion back to follow you."
+msgstr ""
+
+#: whistle.lua:86
+msgid "Plays a cheerful melody that commands tricks when following."
+msgstr ""
+
+#: whistle.lua:87
+msgid "Sneak + Right-click to check companion status and distance."
+msgstr ""

@@ -1,0 +1,254 @@
+# Mystical Pixie Companion Slovak Translation.
+# Copyright (C) 2026 SaKeL
+# This file is distributed under the MIT License.
+# SaKeL, 2026.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: pixie\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-08 16:31-0400\n"
+"PO-Revision-Date: 2026-10-02 11:05-0400\n"
+"Last-Translator: SaKeL\n"
+"Language-Team: Luanti Translators\n"
+"Language: sk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: bonding.lua:62
+msgid "Ancient Guardian"
+msgstr "Prastarý strážca"
+
+#: bonding.lua:64
+msgid "Loyal Companion"
+msgstr "Verný spoločník"
+
+#: bonding.lua:66
+msgid "Fledgling"
+msgstr "Mláďa"
+
+#: bonding.lua:179 bonding.lua:492 bonding.lua:748 bonding.lua:897
+#: bonding.lua:963
+msgid "Mystical Pixie"
+msgstr "Magická víla"
+
+#: bonding.lua:349
+msgid ""
+"You cut the magical bond loose. Your pixie companion returns freely to the "
+"wild!"
+msgstr ""
+"Prerušili ste magické puto. Váš vílí spoločník sa slobodne vracia do "
+"divočiny!"
+
+#: bonding.lua:481
+msgid ""
+"The Fairy Whistle plays a clear, ethereal tune, but no companion answers."
+msgstr ""
+"Vília píšťalka hrá jasnú, éterickú melódiu, ale žiaden spoločník neodpovedá."
+
+#: bonding.lua:501
+msgid ""
+"✦ You play a cheerful melody. @1 happily performs an aerial trick for you! ✦"
+msgstr ""
+"✦ Hráte veselú melódiu. @1 pre vás s radosťou predvádza vzdušný trik! ✦"
+
+#: bonding.lua:630
+msgid ""
+"✦ @1 heard the sweet call of your Fairy Whistle from (@2, @3, @4) (@5m away) "
+"and rushed to your side! ✦"
+msgstr ""
+"✦ @1 počul sladké volanie vašej vílej píšťalky z (@2, @3, @4) (@5m ďaleko) a "
+"ponáhľal sa k vám! ✦"
+
+#: bonding.lua:634
+msgid ""
+"✦ @1 heard the sweet call of your Fairy Whistle and rushed to your side! ✦"
+msgstr "✦ @1 počul sladké volanie vašej vílej píšťalky a ponáhľal sa k vám! ✦"
+
+#: bonding.lua:751
+msgid "✦ Your @1 (@2) sacrificed its life to save you from death! ✦"
+msgstr ""
+"✦ Váš spoločník @1 (@2) obetoval svoj život, aby vás zachránil pred smrťou! ✦"
+
+#: bonding.lua:876
+msgid "Manage your bonded pixie companion (status, release, rename, nametag)"
+msgstr ""
+"Správa vášho vílieho spoločníka (status, uvoľnenie, premenovanie, menovka)"
+
+#: bonding.lua:880
+msgid "Player not found."
+msgstr "Hráč nebol nájdený."
+
+#: bonding.lua:887
+msgid "Magical bond severed. Your pixie companion has returned to the wild."
+msgstr "Magické puto bolo prerušené. Váš vílí spoločník sa vrátil do divočiny."
+
+#: bonding.lua:889 bonding.lua:931 bonding.lua:937 bonding.lua:973
+msgid "You do not currently have a bonded pixie companion."
+msgstr "V súčasnosti nemáte spojeného vílieho spoločníka."
+
+#: bonding.lua:908
+msgid "Visible"
+msgstr "Viditeľná"
+
+#: bonding.lua:908
+msgid "Hidden"
+msgstr "Skrytá"
+
+#: bonding.lua:916
+msgid "Guarding at (@1, @2, @3) — @4m away"
+msgstr "Stráži na (@1, @2, @3) — @4m ďaleko"
+
+#: bonding.lua:918 entities.lua:1683
+msgid "Guarding"
+msgstr "Stráži"
+
+#: bonding.lua:921 entities.lua:1686
+msgid "Following"
+msgstr "Nasleduje"
+
+#: bonding.lua:928
+msgid ""
+"You are bonded with @1 (Tier: @2 | Bond: @3 | Status: @4 | HP: @5/30 | "
+"Nametag: @6)."
+msgstr ""
+"Ste spojení s @1 (Úroveň: @2 | Puto: @3 | Stav: @4 | HP: @5/30 | Menovka: "
+"@6)."
+
+#: bonding.lua:949
+msgid "Usage: /pixie nametag [show|hide|toggle]"
+msgstr "Použitie: /pixie nametag [show|hide|toggle]"
+
+#: bonding.lua:965
+msgid "Nametag for @1 is now visible."
+msgstr "Menovka pre @1 je teraz viditeľná."
+
+#: bonding.lua:967
+msgid "Nametag for @1 is now completely hidden."
+msgstr "Menovka pre @1 je teraz úplne skrytá."
+
+#: bonding.lua:987
+msgid "Custom name cleared. Pixie companion has returned to its default name."
+msgstr ""
+"Vlastné meno bolo odstránené. Vílí spoločník sa vrátil k predvolenému menu."
+
+#: bonding.lua:991
+msgid "Please provide a valid name (1-32 characters)."
+msgstr "Zadajte platné meno (1-32 znakov)."
+
+#: bonding.lua:1005
+msgid "Your pixie companion has been renamed to '@1'."
+msgstr "Váš vílí spoločník bol premenovaný na „@1“."
+
+#: bonding.lua:1007
+msgid ""
+"Usage: /pixie release, /pixie rename <name>, /pixie nametag [show|hide|"
+"toggle], or /pixie status"
+msgstr ""
+"Použitie: /pixie release, /pixie rename <meno>, /pixie nametag [show|hide|"
+"toggle] alebo /pixie status"
+
+#: dynamic_light.lua:17
+msgid "Pixie Dynamic Aura Light"
+msgstr "Dynamické svetlo aury víly"
+
+#: entities.lua:433
+msgid "Pixie"
+msgstr "Víla"
+
+#: entities.lua:435
+msgid ""
+"✦ Your companion @1 has grown into a Loyal Companion! Threat radar and "
+"triage healing unlocked. ✦"
+msgstr ""
+"✦ Váš spoločník @1 vyrástol na Verného spoločníka! Odomknutý radar hrozieb a "
+"liečenie zranení. ✦"
+
+#: entities.lua:442
+msgid ""
+"✦ Your companion @1 has ascended to an Ancient Guardian! Subterranean ore "
+"sensing unlocked. ✦"
+msgstr ""
+"✦ Váš spoločník @1 sa povýšil na Prastarého strážcu! Odomknuté snímanie "
+"podzemných rúd. ✦"
+
+#: entities.lua:562
+msgid "⚠ Pixie alerts: hostile @1 lurking nearby! ⚠"
+msgstr "⚠ Víla varuje: nepriateľský @1 číha nablízku! ⚠"
+
+#: entities.lua:619
+msgid "✦ Pixie excitedly senses rare @1 hidden nearby! ✦"
+msgstr "✦ Víla s nadšením vycítila vzácnu rudu (@1) skrytú nablízku! ✦"
+
+#: entities.lua:621
+msgid "✦ Pixie senses @1 hidden nearby! ✦"
+msgstr "✦ Víla vycítila rudu (@1) skrytú nablízku! ✦"
+
+#: entities.lua:1681
+msgid "Guarding at (@1, @2, @3)"
+msgstr "Stráži na (@1, @2, @3)"
+
+#: entities.lua:1693
+msgid ""
+"@1 [@2] (Bonded to @3)\n"
+"Status: @4 | Health: @5/30 | Bond: @6"
+msgstr ""
+"@1 [@2] (Spojené s @3)\n"
+"Stav: @4 | Život: @5/30 | Puto: @6"
+
+#: entities.lua:1700
+msgid "Wild"
+msgstr "Divoká"
+
+#: entities.lua:2084
+msgid "@1 Pixie is now bonded to you!"
+msgstr "@1 víla sa teraz s vami spojila!"
+
+#: entities.lua:2087
+msgid ""
+"The Pixie gazes at you timidly. Offer it a flower, honey, or mese crystal "
+"fragment!"
+msgstr ""
+"Víla sa na vás nesmelo pozerá. Ponúknite jej kvet, med alebo úlomok kryštálu "
+"mese!"
+
+#: entities.lua:2117
+msgid "You feed a fresh treat to @1. Vitality restored to @2/@3 HP!"
+msgstr "Kŕmite spoločníka @1 čerstvou maškrtou. Život obnovený na @2/@3 HP!"
+
+#: entities.lua:2127
+msgid "@1 happily performs a joyful trick for you! (Vitality: @2/@3 HP)"
+msgstr "@1 pre vás s radosťou predvádza veselý trik! (Život: @2/@3 HP)"
+
+#: entities.lua:2142
+msgid "✦ Pixie will now guard at (@1, @2, @3). ✦"
+msgstr "✦ Víla bude teraz strážiť na (@1, @2, @3). ✦"
+
+#: entities.lua:2149
+msgid "✦ Pixie is now following you! ✦"
+msgstr "✦ Víla vás teraz nasleduje! ✦"
+
+#: whistle.lua:75
+msgid "✦ Your Fairy Whistle has dissolved into delicate fairy dust! ✦"
+msgstr "✦ Vaša vília píšťalka sa rozplynula na jemný vílí prach! ✦"
+
+#: whistle.lua:84
+msgid "Fairy Whistle"
+msgstr "Vília píšťalka"
+
+#: whistle.lua:85
+msgid "Right-click to call your guarding pixie companion back to follow you."
+msgstr ""
+"Kliknutím pravým tlačidlom zavoláte strážiaceho spoločníka späť k sebe."
+
+#: whistle.lua:86
+msgid "Plays a cheerful melody that commands tricks when following."
+msgstr "Hrá veselú melódiu, ktorá prikazuje triky počas nasledovania."
+
+#: whistle.lua:87
+msgid "Sneak + Right-click to check companion status and distance."
+msgstr ""
+"Prikrčenie + kliknutie pravým tlačidlom zobrazí stav a vzdialenosť "
+"spoločníka."
