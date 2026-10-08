@@ -3,7 +3,7 @@
 [![ContentDB](https://content.luanti.org/packages/SaKeL/pixie/shields/title/)](https://content.luanti.org/packages/SaKeL/pixie/)
 [![ContentDB Downloads](https://content.luanti.org/packages/SaKeL/pixie/shields/downloads/)](https://content.luanti.org/packages/SaKeL/pixie/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.txt)
-[![Media License: CC-BY-SA 4.0](https://img.shields.io/badge/Media-CC--BY--SA--4.0-lightgrey.svg)](LICENSE.txt)
+[![Media License: CC-BY-4.0](https://img.shields.io/badge/Media-CC--BY--4.0-lightgrey.svg)](LICENSE.txt)
 ![Luanti](https://img.shields.io/badge/Luanti-5.17.0%2B-5599ff.svg)
 ![AI-Assisted](https://img.shields.io/badge/AI--assisted-gray)
 
