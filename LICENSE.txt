@@ -32,6 +32,8 @@ Asset Attribution & Licenses:
 ### Blender Project Files (CC-BY-4.0)
 - `assets/pixie.blend`:
   Original Blender project file containing remastered pixie geometry, articulated armature rig, materials, and NLA animation action tracks by SaKeL. Based on `pixies.b3d` by DuckGo.
+- `assets/pixie_poster.blend`:
+  High-resolution 3D marketing poster production scene in nature with floral clusters, dynamic lighting, atmospheric environment, and multi-pixie staging authored by SaKeL (CC-BY-4.0).
 
 ### Textures, Visual Effects & Media (CC-BY-4.0)
 All textures, pixel-art particle sheets, tool icons, and media are original assets authored by SaKeL (CC-BY-4.0):
@@ -41,6 +43,8 @@ All textures, pixel-art particle sheets, tool icons, and media are original asse
   Original 128x128 pixel-art particle sheet for mystical fairy stardust, gossamer wings, healing hearts, guidance runes, and celestial bursts.
 - `textures/pixie_whistle.png`:
   Original 16x16 pixel-art tool icon of an enchanted golden flute/whistle with celestial starlight cyan gemstone.
+- `assets/pixie_poster.png`:
+  Original 1920x1080 high-resolution promotional marketing poster render of the mystical pixie companions in an enchanted floral meadow.
 - `screenshot.png`:
   Original in-game showcase screenshot of the Mystical Pixie Companion in Luanti.
 
