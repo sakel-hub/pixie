@@ -1,0 +1,24 @@
+# Enable or disable in-world floating nametags above tamed pixie companions.
+pixie_show_nametags (Show Pixie nametags) bool true
+
+# Daylight shutoff threshold for dynamic lighting (0-15).
+# When natural ambient sunlight is at or above this level, dynamic lighting is disabled to conserve engine performance.
+pixie_light_natural_threshold (Dynamic Light Sunlight Shutoff Threshold) int 12 0 15
+
+# Maximum Y elevation for pixie ore detection radar.
+# Pixies will skip ore scans when above this height, or when exposed to open daylight at noon.
+pixie_ore_max_y (Max Ore Detection Height) int 64 -31000 31000
+
+# Loyalty tier thresholds in seconds of companion survival time.
+# Tier 1 (Fledgling): 0s to tier 2 threshold. Basic illumination.
+# Tier 2 (Loyal): Unlocks hostile threat radar and triage healing.
+pixie_loyalty_tier2_time (Loyal Companion Time in Seconds) int 1200 60 86400
+
+# Tier 3 (Ancient Guardian): Unlocks deep ore detection radar.
+pixie_loyalty_tier3_time (Guardian Companion Time in Seconds) int 3600 120 86400
+
+# Durability (number of uses) for the Fairy Whistle before it breaks.
+pixie_whistle_durability (Fairy Whistle Durability) int 30 1 1000
+
+# Duration in seconds that a pixie companion maintains safe combat evasion after battle events.
+pixie_combat_retreat_duration (Combat Retreat Duration) float 8.0 2.0 30.0

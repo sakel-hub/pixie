@@ -1,0 +1,112 @@
+MIT License
+
+Copyright (c) 2026 SaKeL
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+Asset Attribution & Licenses:
+
+### 3D Models & Animations (CC-BY-4.0)
+- `models/pixie.glb`:
+  Based on the original 3D mesh `pixies.b3d` by DuckGo (from ethereal_bosses_reworked, MIT).
+  Remastered, re-rigged with articulated fairy wisp armature, vertex weighted, and animated with 13 glTF 2.0 multi-track animation actions (idle, walk, run, fly, attack, hurt, death, flip_back, flip_front, flip_side, flip_side_left, spin_around, somersault) by SaKeL (CC-BY-4.0 / MIT).
+
+### Blender Project Files (CC-BY-4.0)
+- `assets/pixie.blend`:
+  Original Blender project file containing remastered pixie geometry, articulated armature rig, materials, and NLA animation action tracks by SaKeL. Based on `pixies.b3d` by DuckGo.
+
+### Textures, Visual Effects & Media (CC-BY-4.0)
+All textures, pixel-art particle sheets, tool icons, and media are original assets authored by SaKeL (CC-BY-4.0):
+- `textures/pixie.png`:
+  Original 32x32 pixel-art model texture palette and gossamer wings for the mystical winged pixie companion.
+- `textures/pixie_particles.png`:
+  Original 128x128 pixel-art particle sheet for mystical fairy stardust, gossamer wings, healing hearts, guidance runes, and celestial bursts.
+- `textures/pixie_whistle.png`:
+  Original 16x16 pixel-art tool icon of an enchanted golden flute/whistle with celestial starlight cyan gemstone.
+- `screenshot.png`:
+  Original in-game showcase screenshot of the Mystical Pixie Companion in Luanti.
+
+### Audio & Sound Effects (CC0 1.0 Universal)
+Mastered, sliced, trimmed to zero-latency, zero-crossing faded, peak normalized to -1.0 dBFS, and transcoded to mono 44.1kHz Ogg Vorbis specifically for Luanti by SaKeL:
+
+- `sounds/pixie_whistle.1.ogg`:
+  Source: "Flute - staccato - C6 (LDFlute_stac_C5_v3_rr2.wav)" (Sound #373360) by sgossner (Versilian Studios Chamber Orchestra 2: Community Edition)
+  License: Creative Commons 0 1.0 Universal (CC0 1.0)
+  https://freesound.org/people/sgossner/sounds/373360/
+
+- `sounds/pixie_whistle.2.ogg`:
+  Source: "Flute - staccato - E6 (LDFlute_stac_E5_v3_rr2.wav)" (Sound #373362) by sgossner (Versilian Studios Chamber Orchestra 2: Community Edition)
+  License: Creative Commons 0 1.0 Universal (CC0 1.0)
+  https://freesound.org/people/sgossner/sounds/373362/
+
+- `sounds/pixie_whistle.3.ogg`:
+  Source: "Flute - staccato - E5 (LDFlute_stac_E4_v3_rr2.wav)" (Sound #373361) by sgossner (Versilian Studios Chamber Orchestra 2: Community Edition)
+  License: Creative Commons 0 1.0 Universal (CC0 1.0)
+  https://freesound.org/people/sgossner/sounds/373361/
+
+- `sounds/pixie_idle.1.ogg`:
+  Source: "Fairy FlyBy 2.aif" (Sound #148047) by timgormly
+  License: Creative Commons 0 1.0 Universal (CC0 1.0)
+  https://freesound.org/people/timgormly/sounds/148047/
+
+- `sounds/pixie_idle.2.ogg`:
+  Source: "Fairy FlyBy 1.aif" (Sound #148048) by timgormly
+  License: Creative Commons 0 1.0 Universal (CC0 1.0)
+  https://freesound.org/people/timgormly/sounds/148048/
+
+- `sounds/pixie_chime.1.ogg`:
+  Source: "cartoon_wink_magic_sparkle.wav" (Sound #511485) by MLaudio
+  License: Creative Commons 0 1.0 Universal (CC0 1.0)
+  https://freesound.org/people/MLaudio/sounds/511485/
+
+- `sounds/pixie_chime.2.ogg`:
+  Source: "ShiningRinging" (Sound #759840) by NoisyRedFox
+  License: Creative Commons 0 1.0 Universal (CC0 1.0)
+  https://freesound.org/people/NoisyRedFox/sounds/759840/
+
+- `sounds/pixie_chime.3.ogg`:
+  Source: "GLEAM-GLOW-SFX-CHIME.wav" (Sound #351408) by newagesoup
+  License: Creative Commons 0 1.0 Universal (CC0 1.0)
+  https://freesound.org/people/newagesoup/sounds/351408/
+
+- `sounds/pixie_hurt.ogg`:
+  Source: "Tiny_Sqeek_1.wav" (Sound #478198) by JonnyRuss01
+  License: Creative Commons 0 1.0 Universal (CC0 1.0)
+  https://freesound.org/people/JonnyRuss01/sounds/478198/
+
+- `sounds/pixie_death.ogg`:
+  Source: "Descending-chimes" (Sound #870075) by LAPS-Catalog
+  License: Creative Commons 0 1.0 Universal (CC0 1.0)
+  https://freesound.org/people/LAPS-Catalog/sounds/870075/
+
+### Asset Pipeline & Build Automation Scripts (MIT)
+Authored by SaKeL:
+- `scripts/generate_pixie_particles.py`: Procedural sprite atlas generator for 128x128 particle sheet.
+- `scripts/generate_pixie_whistle_texture.py`: Procedural 16x16 pixel-art tool icon generator for the Fairy Whistle.
+- `scripts/generate_whistle_sounds.py`: Procedural audio processing and mastering script utilizing Blender LTS `aud` DSP engine.
+- `scripts/deploy.mjs`: ContentDB automated release deployment module.
+- `scripts/weblate.mjs`: Weblate REST API synchronization module.
+
+### Translations & Localization Catalogs (MIT)
+Authored and maintained by SaKeL:
+- `locale/pixie.pot`: GNU Gettext translation template catalog (MIT).
+- `locale/pixie.en.po`: English translation catalog (MIT).
+- `locale/pixie.sk.po`: Slovak translation catalog (MIT).
