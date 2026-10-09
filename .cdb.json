@@ -4,8 +4,8 @@
   "description": "Mystical glowing fairy companion featuring dynamic lighting, high-value ore prospecting, and player death guidance",
   "license": "MIT",
   "media_license": "CC-BY-4.0",
-  "type": "mod",
+  "type": "MOD",
   "author": "SaKeL",
-  "tags": ["mobs", "companions", "magic", "lighting"],
+  "tags": ["mobs", "magic"],
   "ai_disclosure": "ASSISTED"
 }
