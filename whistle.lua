@@ -57,11 +57,11 @@ local function handle_whistle(itemstack, user, pointed_thing)
 	end
 
 	-- Musical whistle audio and visual starlight sparkles
-	core.sound_play("pixie_whistle", {
+	x_mob_core.play_sound(user, "pixie_whistle", {
 		pos = ppos,
 		gain = 0.85,
 		pitch = 1.0,
-		max_hear_distance = 24.0,
+		distance = 24.0,
 	})
 	pixie.spawn_whistle_melody(ppos, player_name)
 

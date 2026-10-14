@@ -99,6 +99,16 @@ function compat.register_hostile_faction(faction)
 	compat.hostile_factions[faction:lower()] = true
 end
 
+---Formats a technical entity name into a human-readable Title Case string.
+---@param ent_name string
+---@return string
+local function format_entity_title(ent_name)
+	local sub = ent_name:match(":(.+)$") or ent_name
+	return (sub:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
+		return first:upper() .. rest:lower()
+	end))
+end
+
 ---Determines whether an ObjectRef is a hostile threat to the player.
 ---@param obj ObjectRef
 ---@param owner_player? ObjectRef
@@ -121,8 +131,7 @@ function compat.is_hostile(obj, owner_player)
 	-- Do not alert on the player's own tamed companions or pets
 	local owner_name = owner_player and owner_player:get_player_name()
 	if owner_name then
-		if (ent.owner and ent.owner == owner_name)
-			or (ent.tamed and (ent.owner_name == owner_name or ent.owner == owner_name)) then
+		if ent.owner_name == owner_name or ent.owner == owner_name then
 			return false, ""
 		end
 	end
@@ -135,31 +144,19 @@ function compat.is_hostile(obj, owner_player)
 	-- Mobs Redo / generic monster type or aggressive attack type
 	if ent.type == "monster" or ent.type == "hostile"
 		or (ent.passive == false and (ent.attack_type == "dogfight" or ent.attack_type == "shoot")) then
-		local sub = ent.name:match(":(.+)$") or ent.name
-		local title = sub:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
-			return first:upper() .. rest:lower()
-		end)
-		return true, title
+		return true, format_entity_title(ent.name)
 	end
 
 	-- Creatura / Animalia aggressive predators
 	if ent.attacks_players == true or ent.hostile == true then
-		local sub = ent.name:match(":(.+)$") or ent.name
-		local title = sub:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
-			return first:upper() .. rest:lower()
-		end)
-		return true, title
+		return true, format_entity_title(ent.name)
 	end
 
 	if ent.factions and type(ent.factions) == "table" then
 		for k, v in pairs(ent.factions) do
 			local f = (type(k) == "string" and k) or (type(v) == "string" and v)
 			if f and compat.hostile_factions[f:lower()] then
-				local sub = ent.name:match(":(.+)$") or ent.name
-				local title = sub:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
-					return first:upper() .. rest:lower()
-				end)
-				return true, title
+				return true, format_entity_title(ent.name)
 			end
 		end
 	end
@@ -167,11 +164,7 @@ function compat.is_hostile(obj, owner_player)
 	if owner_player and owner_player:is_valid() then
 		if ent.target == owner_player or ent.attack == owner_player
 			or ent._target == owner_player or ent.punch_target == owner_player then
-			local sub = ent.name:match(":(.+)$") or ent.name
-			local title = sub:gsub("_", " "):gsub("(%a)([%w_']*)", function(first, rest)
-				return first:upper() .. rest:lower()
-			end)
-			return true, title
+			return true, format_entity_title(ent.name)
 		end
 	end
 
