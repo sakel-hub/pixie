@@ -32,7 +32,6 @@ local ore_cache = {
 }
 
 ore_sensor.cache = ore_cache
-pixie.ore_cache = ore_cache
 
 ---@type string[]|nil
 local pixie_ore_nodes = nil
@@ -104,11 +103,9 @@ local ORE_STEMS = {
 ---@return integer priority Score between 5 and 65 (default 15 for unidentified ores)
 function ore_sensor.calculate_ore_priority(name, def)
 	-- Check explicit game/mod compat registry first
-	if pixie.compat then
-		local c_info = pixie.compat.get_ore_info(name)
-		if c_info and c_info.priority then
-			return c_info.priority
-		end
+	local c_info = pixie.compat.get_ore_info(name)
+	if c_info and c_info.priority then
+		return c_info.priority
 	end
 
 	local lname = name:lower()
@@ -152,11 +149,9 @@ end
 ---@param def table Node definition table
 ---@return string Clean display title
 function ore_sensor.extract_clean_ore_title(name, def)
-	if pixie.compat then
-		local c_info = pixie.compat.get_ore_info(name)
-		if c_info and c_info.title then
-			return c_info.title
-		end
+	local c_info = pixie.compat.get_ore_info(name)
+	if c_info and c_info.title then
+		return c_info.title
 	end
 
 	local desc = def and (def.short_description or def.description)
@@ -282,19 +277,38 @@ function ore_sensor.get_ore_nodes()
 	end
 
 	-- Also incorporate compat-registered ores
-	if pixie.compat then
-		for c_name, c_info in pairs(pixie.compat.get_all_ores()) do
-			if not seen[c_name] then
-				seen[c_name] = true
-				node_list[#node_list + 1] = c_name
-				pixie_ore_titles[c_name] = c_info.title
-				pixie_ore_priorities[c_name] = c_info.priority
-			end
+	for c_name, c_info in pairs(pixie.compat.get_all_ores()) do
+		if not seen[c_name] then
+			seen[c_name] = true
+			node_list[#node_list + 1] = c_name
+			pixie_ore_titles[c_name] = c_info.title
+			pixie_ore_priorities[c_name] = c_info.priority
 		end
 	end
 
 	pixie_ore_nodes = node_list
 	return pixie_ore_nodes
+end
+
+---Returns the cached or computed ore priority for a node name (0 if not a valuable ore).
+---@param node_name string
+---@return integer priority
+function ore_sensor.get_node_priority(node_name)
+	if not node_name or node_name == "" then return 0 end
+	local cached = pixie_ore_priorities[node_name]
+	if cached then return cached end
+	local c_info = pixie.compat.get_ore_info(node_name)
+	if c_info and c_info.priority then
+		pixie_ore_priorities[node_name] = c_info.priority
+		return c_info.priority
+	end
+	local ndef = core.registered_nodes and core.registered_nodes[node_name]
+	if ndef and ore_sensor.is_valuable_ore_node(node_name, ndef) then
+		local p = ore_sensor.calculate_ore_priority(node_name, ndef)
+		pixie_ore_priorities[node_name] = p
+		return p
+	end
+	return 0
 end
 
 ore_sensor.pixie_ore_titles = pixie_ore_titles
@@ -327,6 +341,28 @@ function ore_sensor.can_scan(pos)
 	end
 
 	return true
+end
+
+---Updates the spatial scan cache for standard-radius queries.
+---@param now number Current gametime
+---@param center Vector Scan center position
+---@param ore_pos Vector|nil Found ore position
+---@param title string|nil Found ore title
+---@param priority integer Found ore priority
+---@param node_name string|nil Found ore technical name
+local function update_scan_cache(now, center, ore_pos, title, priority, node_name)
+	ore_cache.last_scan_time = now
+	if ore_cache.last_scan_pos then
+		ore_cache.last_scan_pos.x = center.x
+		ore_cache.last_scan_pos.y = center.y
+		ore_cache.last_scan_pos.z = center.z
+	else
+		ore_cache.last_scan_pos = {x = center.x, y = center.y, z = center.z}
+	end
+	ore_cache.cached_ore_pos = ore_pos
+	ore_cache.cached_ore_title = title
+	ore_cache.cached_ore_priority = priority
+	ore_cache.cached_node_name = node_name
 end
 
 ---Scans a subterranean cuboid volume for high-value ores.
@@ -391,18 +427,7 @@ function ore_sensor.scan_area(center, radius_h, radius_v)
 	local ore_groups = core.find_nodes_in_area(minp, maxp, target_nodes, true)
 	if not ore_groups or not next(ore_groups) then
 		if is_std_radius then
-			cache.last_scan_time = now
-			if cache.last_scan_pos then
-				cache.last_scan_pos.x = center.x
-				cache.last_scan_pos.y = center.y
-				cache.last_scan_pos.z = center.z
-			else
-				cache.last_scan_pos = {x = center.x, y = center.y, z = center.z}
-			end
-			cache.cached_ore_pos = nil
-			cache.cached_ore_title = nil
-			cache.cached_ore_priority = 0
-			cache.cached_node_name = nil
+			update_scan_cache(now, center, nil, nil, 0, nil)
 		end
 		return nil, nil, 0, nil
 	end
@@ -450,39 +475,44 @@ function ore_sensor.scan_area(center, radius_h, radius_v)
 		end
 
 		if is_std_radius then
-			cache.last_scan_time = now
-			if cache.last_scan_pos then
-				cache.last_scan_pos.x = center.x
-				cache.last_scan_pos.y = center.y
-				cache.last_scan_pos.z = center.z
-			else
-				cache.last_scan_pos = {x = center.x, y = center.y, z = center.z}
-			end
-			cache.cached_ore_pos = best_ore_pos
-			cache.cached_ore_title = title
-			cache.cached_ore_priority = best_priority
-			cache.cached_node_name = best_node_name
+			update_scan_cache(now, center, best_ore_pos, title, best_priority, best_node_name)
 		end
 
 		return best_ore_pos, title, best_priority, best_node_name
 	end
 
 	if is_std_radius then
-		cache.last_scan_time = now
-		if cache.last_scan_pos then
-			cache.last_scan_pos.x = center.x
-			cache.last_scan_pos.y = center.y
-			cache.last_scan_pos.z = center.z
-		else
-			cache.last_scan_pos = {x = center.x, y = center.y, z = center.z}
-		end
-		cache.cached_ore_pos = nil
-		cache.cached_ore_title = nil
-		cache.cached_ore_priority = 0
-		cache.cached_node_name = nil
+		update_scan_cache(now, center, nil, nil, 0, nil)
 	end
 
 	return nil, nil, 0, nil
+end
+
+-- Celebratory Somersaults when Mining Rare Ores (Diamond, Mese, Emerald, Ancient Debris, etc.)
+if core.register_on_dignode then
+	core.register_on_dignode(function(pos, oldnode, digger)
+		if not oldnode or not digger or not digger.is_player or not digger:is_player() or not digger:is_valid() then
+			return
+		end
+		if ore_sensor.get_node_priority(oldnode.name) < 45 then
+			return
+		end
+		local player_name = digger:get_player_name()
+		if not player_name or player_name == "" then return end
+
+		local comp = pixie.bonding and pixie.bonding.active_player_pixies[player_name]
+		if comp and comp.object and comp.object:is_valid() then
+			local cpos = comp.object:get_pos()
+			if cpos and pos then
+				local dx = cpos.x - pos.x
+				local dy = cpos.y - pos.y
+				local dz = cpos.z - pos.z
+				if (dx * dx + dy * dy + dz * dz) <= 256.0 then
+					pixie.trigger_celebration(comp)
+				end
+			end
+		end
+	end)
 end
 
 pixie.ore_sensor = ore_sensor

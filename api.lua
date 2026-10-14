@@ -14,7 +14,6 @@
 ---@field compat PixieCompat
 ---@field dynamic_light PixieLightSubsystem
 ---@field ore_sensor PixieOreSensor
----@field ore_cache PixieOreCache
 ---@field bonding PixieBondingSubsystem
 ---@field threat_cache PixieThreatCache
 ---@field TRICK_DURATIONS table<string, number>
@@ -23,12 +22,12 @@
 ---@field attach_ambient_sparkles fun(obj: ObjectRef, playername?: string): integer|nil
 ---@field spawn_heal fun(pos: Vector, count?: number, playername?: string)
 ---@field spawn_guidance_beacon fun(pos: Vector, dir: Vector, target_pos: Vector, playername?: string)
----@field spawn_death_guide fun(pos: Vector, dir: Vector, target_pos?: Vector, playername?: string)
 ---@field spawn_tame_burst fun(pos: Vector)
 ---@field spawn_death fun(pos: Vector)
 ---@field spawn_guardian_sacrifice fun(pos: Vector, playername?: string)
 ---@field spawn_whistle_melody fun(pos: Vector, playername?: string)
 ---@field play_trick fun(obj: ObjectRef, trick_name?: string, options?: PixieTrickOptions): boolean
+---@field trigger_celebration fun(ent: table): boolean
 ---@field signal_combat fun(player_or_name: ObjectRef|string, duration?: number, threat_pos?: Vector): boolean
 ---@field storage? StorageRef Persistent per-mod key-value storage
 local api = {}
@@ -103,6 +102,20 @@ function api.play_trick(obj, trick_name, options)
 		end
 	end
 	return true
+end
+
+---Triggers an ecstatic celebratory somersault or spin on a companion entity (e.g. when mining rare ores).
+---@param ent table Pixie entity instance
+---@return boolean success
+function api.trigger_celebration(ent)
+	if not ent or not ent.object or not ent.object:is_valid() then return false end
+	local chosen = (math.random() < 0.65) and "somersault" or "spin_around"
+	return api.play_trick(ent.object, chosen, {
+		speed = 1.25,
+		sparkles = 8,
+		sound = true,
+		force = true,
+	})
 end
 
 ---Recalls a player's bonded companion to follow them, or triggers an acrobatic trick if nearby.
