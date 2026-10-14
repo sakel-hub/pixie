@@ -3,186 +3,85 @@
 	Starlight, Healing Hearts, Guidance Beacons, Taming Bursts, and Death Dissolve.
 ]]
 
-local PIXIE_SPARKLE_TEXPOOL = {
-	{
-		name = "pixie_particles.png^[sheet:8x8:1,0",
-		blend = "screen",
-		scale_tween = {1.2, 1.8},
-		alpha_tween = {0.8, 0.2, start = 0.5},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:2,0",
-		blend = "screen",
-		scale_tween = {1.4, 2.2},
-		alpha_tween = {1.0, 0.3, start = 0.4},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:3,0",
-		blend = "screen",
-		scale_tween = {1.0, 1.5},
-		alpha_tween = {0.9, 0.1, start = 0.6},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:4,0",
-		blend = "screen",
-		scale_tween = {1.1, 1.7},
-		alpha_tween = {0.85, 0.25, start = 0.5},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:5,0",
-		blend = "screen",
-		scale_tween = {0.9, 1.4},
-		alpha_tween = {0.75, 0.15, start = 0.7},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:6,0",
-		blend = "screen",
-		scale_tween = {1.3, 2.0},
-		alpha_tween = {0.95, 0.35, start = 0.3},
-	},
-}
+---Builds a modern Luanti texpool array from compact frame definitions.
+---@param blend string Blend mode ("screen" or "alpha")
+---@param frames table[] Array of {col, row, s0, s1, a0, a1, a_start}
+---@return table[]
+local function build_texpool(blend, frames)
+	local pool = {}
+	for i = 1, #frames do
+		local f = frames[i]
+		pool[i] = {
+			name = string.format("pixie_particles.png^[sheet:8x8:%d,%d", f[1], f[2]),
+			blend = blend,
+			scale_tween = {f[3], f[4]},
+			alpha_tween = {f[5], f[6], start = f[7]},
+		}
+	end
+	return pool
+end
 
-local PIXIE_GLIMMER_TEXPOOL = {
-	{
-		name = "pixie_particles.png^[sheet:8x8:0,1",
-		blend = "screen",
-		scale_tween = {1.2, 2.0},
-		alpha_tween = {1.0, 0.0, start = 0.3},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:1,1",
-		blend = "screen",
-		scale_tween = {1.5, 2.4},
-		alpha_tween = {1.0, 0.1, start = 0.4},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:2,1",
-		blend = "screen",
-		scale_tween = {1.1, 1.8},
-		alpha_tween = {0.9, 0.0, start = 0.5},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:3,1",
-		blend = "screen",
-		scale_tween = {1.3, 2.2},
-		alpha_tween = {0.95, 0.05, start = 0.3},
-	},
-}
+local PIXIE_SPARKLE_TEXPOOL = build_texpool("screen", {
+	{1, 0, 1.2, 1.8, 0.80, 0.20, 0.5},
+	{2, 0, 1.4, 2.2, 1.00, 0.30, 0.4},
+	{3, 0, 1.0, 1.5, 0.90, 0.10, 0.6},
+	{4, 0, 1.1, 1.7, 0.85, 0.25, 0.5},
+	{5, 0, 0.9, 1.4, 0.75, 0.15, 0.7},
+	{6, 0, 1.3, 2.0, 0.95, 0.35, 0.3},
+})
 
-local PIXIE_HEART_TEXPOOL = {
-	{
-		name = "pixie_particles.png^[sheet:8x8:0,2",
-		blend = "alpha",
-		scale_tween = {1.0, 1.8},
-		alpha_tween = {1.0, 0.0, start = 0.4},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:1,2",
-		blend = "alpha",
-		scale_tween = {1.2, 2.2},
-		alpha_tween = {1.0, 0.1, start = 0.3},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:2,2",
-		blend = "alpha",
-		scale_tween = {1.4, 2.6},
-		alpha_tween = {1.0, 0.0, start = 0.5},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:3,2",
-		blend = "alpha",
-		scale_tween = {1.1, 2.0},
-		alpha_tween = {0.9, 0.0, start = 0.4},
-	},
-}
+local PIXIE_GLIMMER_TEXPOOL = build_texpool("screen", {
+	{0, 1, 1.2, 2.0, 1.00, 0.00, 0.3},
+	{1, 1, 1.5, 2.4, 1.00, 0.10, 0.4},
+	{2, 1, 1.1, 1.8, 0.90, 0.00, 0.5},
+	{3, 1, 1.3, 2.2, 0.95, 0.05, 0.3},
+})
 
-local PIXIE_BURST_TEXPOOL = {
-	{
-		name = "pixie_particles.png^[sheet:8x8:1,3",
-		blend = "screen",
-		scale_tween = {1.5, 3.2},
-		alpha_tween = {1.0, 0.0, start = 0.2},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:2,3",
-		blend = "screen",
-		scale_tween = {1.8, 3.6},
-		alpha_tween = {1.0, 0.0, start = 0.2},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:2,0",
-		blend = "screen",
-		scale_tween = {1.2, 2.5},
-		alpha_tween = {0.9, 0.1, start = 0.4},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:0,3",
-		blend = "screen",
-		scale_tween = {2.0, 4.0},
-		alpha_tween = {1.0, 0.0, start = 0.1},
-	},
-}
+local PIXIE_HEART_TEXPOOL = build_texpool("alpha", {
+	{0, 2, 1.0, 1.8, 1.00, 0.00, 0.4},
+	{1, 2, 1.2, 2.2, 1.00, 0.10, 0.3},
+	{2, 2, 1.4, 2.6, 1.00, 0.00, 0.5},
+	{3, 2, 1.1, 2.0, 0.90, 0.00, 0.4},
+})
 
-local PIXIE_WING_TEXPOOL = {
-	{
-		name = "pixie_particles.png^[sheet:8x8:0,6",
-		blend = "screen",
-		scale_tween = {1.2, 0.4},
-		alpha_tween = {0.9, 0.0, start = 0.5},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:1,6",
-		blend = "screen",
-		scale_tween = {1.4, 0.5},
-		alpha_tween = {1.0, 0.0, start = 0.4},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:2,6",
-		blend = "screen",
-		scale_tween = {1.0, 0.3},
-		alpha_tween = {0.8, 0.0, start = 0.6},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:3,6",
-		blend = "screen",
-		scale_tween = {1.3, 0.4},
-		alpha_tween = {0.9, 0.0, start = 0.5},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:4,6",
-		blend = "screen",
-		scale_tween = {1.1, 0.3},
-		alpha_tween = {0.85, 0.0, start = 0.5},
-	},
-}
+local PIXIE_BURST_TEXPOOL = build_texpool("screen", {
+	{1, 3, 1.5, 3.2, 1.00, 0.00, 0.2},
+	{2, 3, 1.8, 3.6, 1.00, 0.00, 0.2},
+	{2, 0, 1.2, 2.5, 0.90, 0.10, 0.4},
+	{0, 3, 2.0, 4.0, 1.00, 0.00, 0.1},
+})
 
-local PIXIE_TAME_STAR_TEXPOOL = {
-	{
-		name = "pixie_particles.png^[sheet:8x8:2,6",
-		blend = "screen",
-		scale_tween = {1.5, 3.0},
-		alpha_tween = {1.0, 0.0, start = 0.3},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:3,6",
-		blend = "screen",
-		scale_tween = {1.2, 2.5},
-		alpha_tween = {0.9, 0.0, start = 0.4},
-	},
-	{
-		name = "pixie_particles.png^[sheet:8x8:1,6",
-		blend = "screen",
-		scale_tween = {1.8, 3.5},
-		alpha_tween = {1.0, 0.0, start = 0.2},
-	},
-}
+local PIXIE_WING_TEXPOOL = build_texpool("screen", {
+	{0, 6, 1.2, 0.4, 0.90, 0.00, 0.5},
+	{1, 6, 1.4, 0.5, 1.00, 0.00, 0.4},
+	{2, 6, 1.0, 0.3, 0.80, 0.00, 0.6},
+	{3, 6, 1.3, 0.4, 0.90, 0.00, 0.5},
+	{4, 6, 1.1, 0.3, 0.85, 0.00, 0.5},
+})
+
+local PIXIE_TAME_STAR_TEXPOOL = build_texpool("screen", {
+	{2, 6, 1.5, 3.0, 1.00, 0.00, 0.3},
+	{3, 6, 1.2, 2.5, 0.90, 0.00, 0.4},
+	{1, 6, 1.8, 3.5, 1.00, 0.00, 0.2},
+})
+
+---Dispatches a particle spawner optionally scoped to a single player.
+---@param spec table ParticleSpawner definition
+---@param playername? string Optional player recipient
+---@return integer|nil spawner_id
+local function emit_spawner(spec, playername)
+	if playername and playername ~= "" then
+		spec.playername = playername
+	end
+	return core.add_particlespawner(spec)
+end
 
 ---Spawns ambient fairy stardust and sparkling wing motes around a pixie.
 ---@param pos Vector Origin position
 ---@param count? number Particle count (default: 4)
 ---@param playername? string Optional recipient playername to conserve network bandwidth
 function pixie.spawn_sparkles(pos, count, playername)
-	local p_spec = {
+	emit_spawner({
 		amount = count or 4,
 		time = 0.15,
 		pos = {
@@ -200,23 +99,7 @@ function pixie.spawn_sparkles(pos, count, playername)
 		exptime = {min = 0.8, max = 1.6},
 		glow = 14,
 		texpool = PIXIE_SPARKLE_TEXPOOL,
-
-		minpos = {x = pos.x - 0.25, y = pos.y - 0.15, z = pos.z - 0.25},
-		maxpos = {x = pos.x + 0.25, y = pos.y + 0.35, z = pos.z + 0.25},
-		minvel = {x = -0.3, y = -0.1, z = -0.3},
-		maxvel = {x = 0.3, y = 0.4, z = 0.3},
-		minacc = {x = 0, y = 0.1, z = 0},
-		maxacc = {x = 0, y = 0.3, z = 0},
-		minexptime = 0.8,
-		maxexptime = 1.6,
-		minsize = 1.0,
-		maxsize = 2.2,
-		texture = "pixie_particles.png^[sheet:8x8:2,0",
-	}
-	if playername and playername ~= "" then
-		p_spec.playername = playername
-	end
-	core.add_particlespawner(p_spec)
+	}, playername)
 end
 
 ---Attaches a persistent ambient stardust spawner directly to the pixie entity object.
@@ -225,7 +108,7 @@ end
 ---@param playername? string Optional companion owner playername
 ---@return integer|nil spawner_id Particle spawner identifier
 function pixie.attach_ambient_sparkles(obj, playername)
-	local p_spec = {
+	return emit_spawner({
 		amount = 2.0,
 		time = 0,
 		attached = obj,
@@ -244,23 +127,7 @@ function pixie.attach_ambient_sparkles(obj, playername)
 		exptime = {min = 0.8, max = 1.5},
 		glow = 14,
 		texpool = PIXIE_SPARKLE_TEXPOOL,
-
-		minpos = {x = -0.25, y = -0.15, z = -0.25},
-		maxpos = {x = 0.25, y = 0.35, z = 0.25},
-		minvel = {x = -0.25, y = -0.1, z = -0.25},
-		maxvel = {x = 0.25, y = 0.3, z = 0.25},
-		minacc = {x = 0, y = 0.05, z = 0},
-		maxacc = {x = 0, y = 0.2, z = 0},
-		minexptime = 0.8,
-		maxexptime = 1.5,
-		minsize = 1.0,
-		maxsize = 2.0,
-		texture = "pixie_particles.png^[sheet:8x8:2,0",
-	}
-	if playername and playername ~= "" then
-		p_spec.playername = playername
-	end
-	return core.add_particlespawner(p_spec)
+	}, playername)
 end
 
 ---Spawns gentle healing starlight and floating heart motes toward a player.
@@ -268,7 +135,7 @@ end
 ---@param count? number Particle count (default: 12)
 ---@param playername? string Optional player recipient to reduce bandwidth
 function pixie.spawn_heal(pos, count, playername)
-	local p_spec = {
+	emit_spawner({
 		amount = count or 12,
 		time = 0.35,
 		pos = {
@@ -286,21 +153,7 @@ function pixie.spawn_heal(pos, count, playername)
 		exptime = {min = 1.2, max = 2.0},
 		glow = 14,
 		texpool = PIXIE_HEART_TEXPOOL,
-
-		minpos = {x = pos.x - 0.35, y = pos.y + 0.2, z = pos.z - 0.35},
-		maxpos = {x = pos.x + 0.35, y = pos.y + 1.2, z = pos.z + 0.35},
-		minvel = {x = -0.4, y = 0.6, z = -0.4},
-		maxvel = {x = 0.4, y = 1.4, z = 0.4},
-		minacc = {x = 0, y = 0.2, z = 0},
-		maxacc = {x = 0, y = 0.5, z = 0},
-		minexptime = 1.2,
-		maxexptime = 2.0,
-		minsize = 1.8,
-		maxsize = 3.4,
-		texture = "pixie_particles.png^[sheet:8x8:1,2",
-	}
-	if playername then p_spec.playername = playername end
-	core.add_particlespawner(p_spec)
+	}, playername)
 end
 
 ---Spawns a guidance starlight beam pointing toward an ore deposit or point of interest.
@@ -309,7 +162,7 @@ end
 ---@param target_pos Vector Target point of interest
 ---@param playername? string Optional player recipient to reduce bandwidth
 function pixie.spawn_guidance_beacon(pos, dir, target_pos, playername)
-	local beam_spec = {
+	emit_spawner({
 		amount = 12,
 		time = 0.4,
 		pos = {
@@ -326,24 +179,10 @@ function pixie.spawn_guidance_beacon(pos, dir, target_pos, playername)
 		exptime = {min = 0.8, max = 1.4},
 		glow = 14,
 		texpool = PIXIE_GLIMMER_TEXPOOL,
-
-		minpos = {x = pos.x - 0.1, y = pos.y - 0.1, z = pos.z - 0.1},
-		maxpos = {x = pos.x + 0.1, y = pos.y + 0.1, z = pos.z + 0.1},
-		minvel = {x = dir.x * 3.5 - 0.2, y = dir.y * 3.5 - 0.2, z = dir.z * 3.5 - 0.2},
-		maxvel = {x = dir.x * 5.0 + 0.2, y = dir.y * 5.0 + 0.2, z = dir.z * 5.0 + 0.2},
-		minacc = {x = 0, y = 0.05, z = 0},
-		maxacc = {x = 0, y = 0.15, z = 0},
-		minexptime = 0.8,
-		maxexptime = 1.4,
-		minsize = 1.4,
-		maxsize = 2.8,
-		texture = "pixie_particles.png^[sheet:8x8:2,0",
-	}
-	if playername then beam_spec.playername = playername end
-	core.add_particlespawner(beam_spec)
+	}, playername)
 
 	-- Highlight target position
-	local mark_spec = {
+	emit_spawner({
 		amount = 14,
 		time = 0.5,
 		pos = {
@@ -357,67 +196,13 @@ function pixie.spawn_guidance_beacon(pos, dir, target_pos, playername)
 		exptime = {min = 1.0, max = 1.8},
 		glow = 14,
 		texpool = PIXIE_BURST_TEXPOOL,
-
-		minpos = {x = target_pos.x - 0.4, y = target_pos.y - 0.4, z = target_pos.z - 0.4},
-		maxpos = {x = target_pos.x + 0.4, y = target_pos.y + 0.4, z = target_pos.z + 0.4},
-		minvel = {x = -0.3, y = -0.2, z = -0.3},
-		maxvel = {x = 0.3, y = 0.5, z = 0.3},
-		minacc = {x = 0, y = 0.1, z = 0},
-		maxacc = {x = 0, y = 0.2, z = 0},
-		minexptime = 1.0,
-		maxexptime = 1.8,
-		minsize = 1.6,
-		maxsize = 3.0,
-		texture = "pixie_particles.png^[sheet:8x8:2,0",
-	}
-	if playername then mark_spec.playername = playername end
-	core.add_particlespawner(mark_spec)
-end
-
----Spawns clean directional particles guiding player back towards grave/death coordinates.
----@param pos Vector Origin position (e.g. pixie world coordinate)
----@param dir Vector Direction unit vector towards grave
----@param target_pos Vector Grave world coordinate
----@param playername? string Optional player recipient
-function pixie.spawn_death_guide(pos, dir, _target_pos, playername)
-	local guide_spec = {
-		amount = 14,
-		time = 0.4,
-		pos = {
-			min = {x = pos.x - 0.15, y = pos.y - 0.15, z = pos.z - 0.15},
-			max = {x = pos.x + 0.15, y = pos.y + 0.15, z = pos.z + 0.15},
-		},
-		vel = {
-			min = {x = dir.x * 2.8 - 0.25, y = dir.y * 2.8 - 0.2, z = dir.z * 2.8 - 0.25},
-			max = {x = dir.x * 4.2 + 0.25, y = dir.y * 4.2 + 0.2, z = dir.z * 4.2 + 0.25},
-		},
-		acc = {min = {x = 0, y = 0.05, z = 0}, max = {x = 0, y = 0.15, z = 0}},
-		drag = {min = {x = 0.2, y = 0.2, z = 0.2}, max = {x = 0.4, y = 0.4, z = 0.4}},
-		size = {min = 2.4, max = 4.2},
-		exptime = {min = 1.2, max = 2.0},
-		glow = 14,
-		texpool = PIXIE_TAME_STAR_TEXPOOL,
-
-		minpos = {x = pos.x - 0.15, y = pos.y - 0.15, z = pos.z - 0.15},
-		maxpos = {x = pos.x + 0.15, y = pos.y + 0.15, z = pos.z + 0.15},
-		minvel = {x = dir.x * 2.8 - 0.25, y = dir.y * 2.8 - 0.2, z = dir.z * 2.8 - 0.25},
-		maxvel = {x = dir.x * 4.2 + 0.25, y = dir.y * 4.2 + 0.2, z = dir.z * 4.2 + 0.25},
-		minacc = {x = 0, y = 0.05, z = 0},
-		maxacc = {x = 0, y = 0.15, z = 0},
-		minexptime = 1.2,
-		maxexptime = 2.0,
-		minsize = 2.4,
-		maxsize = 4.2,
-		texture = "pixie_particles.png^[sheet:8x8:2,6",
-	}
-	if playername then guide_spec.playername = playername end
-	core.add_particlespawner(guide_spec)
+	}, playername)
 end
 
 ---Spawns brilliant taming heart and fairy firework burst upon bonding.
 ---@param pos Vector Origin position
 function pixie.spawn_tame_burst(pos)
-	core.add_particlespawner({
+	emit_spawner({
 		amount = 28,
 		time = 0.25,
 		pos = {
@@ -435,25 +220,13 @@ function pixie.spawn_tame_burst(pos)
 		exptime = {min = 1.4, max = 2.5},
 		glow = 14,
 		texpool = PIXIE_TAME_STAR_TEXPOOL,
-
-		minpos = {x = pos.x - 0.3, y = pos.y, z = pos.z - 0.3},
-		maxpos = {x = pos.x + 0.3, y = pos.y + 0.6, z = pos.z + 0.3},
-		minvel = {x = -2.2, y = 0.5, z = -2.2},
-		maxvel = {x = 2.2, y = 3.2, z = 2.2},
-		minacc = {x = 0, y = -1.5, z = 0},
-		maxacc = {x = 0, y = -0.5, z = 0},
-		minexptime = 1.4,
-		maxexptime = 2.5,
-		minsize = 2.2,
-		maxsize = 4.5,
-		texture = "pixie_particles.png^[sheet:8x8:2,6",
 	})
 end
 
 ---Spawns serene dissolve particles upon pixie death.
 ---@param pos Vector Origin position
 function pixie.spawn_death(pos)
-	core.add_particlespawner({
+	emit_spawner({
 		amount = 24,
 		time = 0.35,
 		pos = {
@@ -470,18 +243,6 @@ function pixie.spawn_death(pos)
 		exptime = {min = 1.2, max = 2.2},
 		glow = 12,
 		texpool = PIXIE_WING_TEXPOOL,
-
-		minpos = {x = pos.x - 0.3, y = pos.y + 0.1, z = pos.z - 0.3},
-		maxpos = {x = pos.x + 0.3, y = pos.y + 0.6, z = pos.z + 0.3},
-		minvel = {x = -1.2, y = 0.2, z = -1.2},
-		maxvel = {x = 1.2, y = 1.8, z = 1.2},
-		minacc = {x = 0, y = 0.1, z = 0},
-		maxacc = {x = 0, y = 0.3, z = 0},
-		minexptime = 1.2,
-		maxexptime = 2.2,
-		minsize = 1.5,
-		maxsize = 3.0,
-		texture = "pixie_particles.png^[sheet:8x8:0,1",
 	})
 end
 
@@ -489,7 +250,7 @@ end
 ---@param pos Vector Player position
 ---@param playername? string Optional player recipient
 function pixie.spawn_guardian_sacrifice(pos, playername)
-	local star_spec = {
+	emit_spawner({
 		amount = 45,
 		time = 0.4,
 		pos = {
@@ -507,23 +268,9 @@ function pixie.spawn_guardian_sacrifice(pos, playername)
 		exptime = {min = 1.6, max = 3.0},
 		glow = 14,
 		texpool = PIXIE_TAME_STAR_TEXPOOL,
+	}, playername)
 
-		minpos = {x = pos.x - 0.4, y = pos.y + 0.2, z = pos.z - 0.4},
-		maxpos = {x = pos.x + 0.4, y = pos.y + 1.6, z = pos.z + 0.4},
-		minvel = {x = -3.5, y = 0.5, z = -3.5},
-		maxvel = {x = 3.5, y = 4.5, z = 3.5},
-		minacc = {x = 0, y = -1.2, z = 0},
-		maxacc = {x = 0, y = -0.4, z = 0},
-		minexptime = 1.6,
-		maxexptime = 3.0,
-		minsize = 2.8,
-		maxsize = 5.5,
-		texture = "pixie_particles.png^[sheet:8x8:2,6",
-	}
-	if playername then star_spec.playername = playername end
-	core.add_particlespawner(star_spec)
-
-	local heart_spec = {
+	emit_spawner({
 		amount = 18,
 		time = 0.5,
 		pos = {
@@ -540,28 +287,14 @@ function pixie.spawn_guardian_sacrifice(pos, playername)
 		exptime = {min = 1.8, max = 2.8},
 		glow = 14,
 		texpool = PIXIE_HEART_TEXPOOL,
-
-		minpos = {x = pos.x - 0.3, y = pos.y + 0.8, z = pos.z - 0.3},
-		maxpos = {x = pos.x + 0.3, y = pos.y + 1.4, z = pos.z + 0.3},
-		minvel = {x = -0.8, y = 1.2, z = -0.8},
-		maxvel = {x = 0.8, y = 2.8, z = 0.8},
-		minacc = {x = 0, y = 0.2, z = 0},
-		maxacc = {x = 0, y = 0.6, z = 0},
-		minexptime = 1.8,
-		maxexptime = 2.8,
-		minsize = 2.4,
-		maxsize = 4.6,
-		texture = "pixie_particles.png^[sheet:8x8:0,2",
-	}
-	if playername then heart_spec.playername = playername end
-	core.add_particlespawner(heart_spec)
+	}, playername)
 end
 
 ---Spawns gentle musical starlight swirls when the fairy whistle is blown.
 ---@param pos Vector Player or whistle origin
 ---@param playername? string Optional player recipient to reduce bandwidth
 function pixie.spawn_whistle_melody(pos, playername)
-	local melody_spec = {
+	emit_spawner({
 		amount = 16,
 		time = 0.35,
 		pos = {
@@ -579,21 +312,5 @@ function pixie.spawn_whistle_melody(pos, playername)
 		exptime = {min = 0.8, max = 1.6},
 		glow = 14,
 		texpool = PIXIE_GLIMMER_TEXPOOL,
-
-		minpos = {x = pos.x - 0.45, y = pos.y + 0.6, z = pos.z - 0.45},
-		maxpos = {x = pos.x + 0.45, y = pos.y + 1.5, z = pos.z + 0.45},
-		minvel = {x = -0.5, y = 0.4, z = -0.5},
-		maxvel = {x = 0.5, y = 1.2, z = 0.5},
-		minacc = {x = 0, y = 0.15, z = 0},
-		maxacc = {x = 0, y = 0.4, z = 0},
-		minexptime = 0.8,
-		maxexptime = 1.6,
-		minsize = 1.4,
-		maxsize = 2.6,
-		texture = "pixie_particles.png^[sheet:8x8:1,1",
-	}
-	if playername and playername ~= "" then
-		melody_spec.playername = playername
-	end
-	core.add_particlespawner(melody_spec)
+	}, playername)
 end
