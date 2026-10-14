@@ -147,6 +147,11 @@ x_mob_core = {
 	get_headroom = function() return 4.0 end,
 	calculate_repulsion = function() return 0, 0, 0 end,
 	generate_uuid = function() return "mock-uuid-1234" end,
+	spawn_mob = function() return nil, nil end,
+	utils = {
+		is_walkable_node = function() return false end,
+		is_passable_node = function() return true end,
+	},
 }
 
 -- Load pixie subsystems
@@ -157,13 +162,12 @@ pixie.spawn_sparkles = function() end
 pixie.attach_ambient_sparkles = function() return 1 end
 pixie.spawn_heal = function() end
 pixie.spawn_guidance_beacon = function() end
-pixie.spawn_death_guide = function() end
 pixie.spawn_tame_burst = function() end
 pixie.spawn_death = function() end
 pixie.spawn_guardian_sacrifice = function() end
 pixie.spawn_whistle_melody = function() end
 pixie.dynamic_light = {update = function() end, clear = function() end}
-pixie.ore_sensor = {can_scan = function() return false end}
+pixie.ore_sensor = {can_scan = function() return false end, cache = {recent_alerts = {}}}
 
 dofile(modpath .. "/compat/init.lua")
 dofile(modpath .. "/bonding.lua")
@@ -219,7 +223,6 @@ local comp_ent = {
 	object = mock_obj,
 	name = "pixie:pixie",
 	owner_name = "SaKeL",
-	owner = "SaKeL",
 	mode = "follow",
 	bond_time = 2000,
 	loyalty_tier = 2,
@@ -232,7 +235,6 @@ mock_obj.ent = comp_ent
 setmetatable(comp_ent, {__index = pixie_def})
 comp_ent:on_activate({owner_name = "SaKeL", mode = "follow", hp = 30}, 0)
 comp_ent.owner_name = "SaKeL"
-comp_ent.owner = "SaKeL"
 pixie.bonding.active_player_pixies["SaKeL"] = comp_ent
 
 -- Test 1: Baseline peaceful state
@@ -360,7 +362,7 @@ comp_ent:on_step(0.1)
 assert(comp_ent._idle_target_pos.y >= player_pos.y + 1.65, "Test 10 Failed: Flower idle elevation must not sink below player elevation!")
 print(string.format("Test 10: Flower Inspection Elevation Floor Verified: Target y=%.2f.", comp_ent._idle_target_pos.y))
 
--- Test 11: Verify pixie mob registration flags for x_mob_core pipeline isolation and elevation
+-- Test 11: Verify pixie mob registration flags for x_mob_core pipeline isolation, elevation, and health_regen
 assert(pixie_def.melee == false, "Test 11 Failed: melee must be false in pixie definition")
 assert(pixie_def.shooter == false, "Test 11 Failed: shooter must be false in pixie definition")
 assert(pixie_def.auto_scan == false, "Test 11 Failed: auto_scan must be false in pixie definition")
@@ -368,6 +370,31 @@ assert(pixie_def.can_attack == false, "Test 11 Failed: can_attack must be false 
 assert(pixie_def.flight_elevation == 1.85, "Test 11 Failed: flight_elevation must be 1.85")
 assert(pixie_def.hover_offset == 1.85, "Test 11 Failed: hover_offset must be 1.85")
 assert(pixie_def.combat_hover_offset == 1.85, "Test 11 Failed: combat_hover_offset must be 1.85")
-print("Test 11: Mob Registration Pipeline Isolation Flags & Flight Elevation Verified.")
+assert(pixie_def.health_regen and pixie_def.health_regen.rate == 0.5 and pixie_def.health_regen.passive == true,
+	"Test 11 Failed: passive health_regen must be configured")
+assert(pixie_def.health_regen.can_flee == false, "Test 11 Failed: health_regen.can_flee must be false")
+print("Test 11: Mob Registration Pipeline Isolation Flags, Flight Elevation & Health Regen Verified.")
+
+-- Test 12: Wild Pixie single-punch delegation (on_punch returns false) & on_hurt flee behavior
+local wild_ent = {
+	object = mock_obj,
+	name = "pixie:pixie",
+	mode = "wild",
+	hp = 30,
+	factions = {pixie = true, fairy = true, neutral = true, players = true},
+}
+setmetatable(wild_ent, {__index = pixie_def})
+local punch_handled = wild_ent:on_punch(mock_player, 1.0, {}, {x = 0, y = 0, z = 1}, 5)
+assert(punch_handled == false, "Test 12 Failed: Wild pixie on_punch must return false to delegate to x_mob_core")
+assert(wild_ent.factions["players"] == nil, "Test 12 Failed: Wild pixie must strip players faction on punch")
+wild_ent:on_hurt(mock_player, 5)
+assert(wild_ent._anim_lock == 0.58, "Test 12 Failed: on_hurt must set _anim_lock = 0.58")
+assert(wild_ent._wander_target ~= nil and wild_ent._wander_timer == 4.0, "Test 12 Failed: Wild pixie must flee on_hurt")
+print("Test 12: Wild Pixie Single-Punch Delegation & on_hurt Flee Verified.")
+
+-- Test 13: Celebration API trigger
+local celebrated = pixie.trigger_celebration(comp_ent)
+assert(celebrated == true, "Test 13 Failed: pixie.trigger_celebration must return true for valid companion")
+print("Test 13: Mining Celebration Trigger API Verified.")
 
 print("========== ALL TESTS PASSED SUCCESSFULLY! ==========")

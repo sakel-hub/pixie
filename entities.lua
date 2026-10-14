@@ -1,7 +1,7 @@
 --[[
 	pixie - Entity Definition & AI Steering
 	Enchanted glowing fairy companion with dynamic lighting, ore detection,
-	hostile threat radar, triage healing, and death waypoint guidance.
+	hostile threat radar, and triage healing.
 ]]
 
 local S = core.get_translator("pixie")
@@ -10,6 +10,8 @@ local mod_storage = pixie.storage
 local avoid_solid_nodes = x_mob_core.avoid_solid_nodes
 local get_headroom = x_mob_core.get_headroom
 local get_ground_y = x_mob_core.get_ground_y
+local is_walkable_node = x_mob_core.utils.is_walkable_node
+local is_passable_node = x_mob_core.utils.is_passable_node
 
 ---If entity is in or immediately touching liquid, scans upward to find the liquid surface elevation.
 ---@param pos Vector Entity position
@@ -44,9 +46,6 @@ end
 ---Shared threat radar cache across companion pixies to eliminate redundant spatial queries in multiplayer
 ---@class PixieThreatCache
 pixie.threat_cache = {
-	last_scan_time = 0,
-	last_scan_pos = nil,
-	cached_threats = {},
 	recent_alerts = {},
 	player_scans = {},
 }
@@ -75,21 +74,7 @@ local function is_taming_food(item_name)
 	if item_name == "farming:honey" or item_name == "default:mese_crystal_fragment" then
 		return true
 	end
-	if pixie.compat and pixie.compat.is_flora(item_name) then
-		return true
-	end
-	local def = core.registered_items[item_name]
-	if def and def.groups then
-		local fg = def.groups.flower
-		local flg = def.groups.flora
-		if (fg and fg > 0) or (flg and flg > 0) then
-			return true
-		end
-	end
-	if item_name:find("^flowers:") or item_name:find(":flower") or item_name:find("^everness:.*flower") then
-		return true
-	end
-	return false
+	return pixie.compat.is_flora(item_name)
 end
 
 -- Pre-allocated neighbor offsets for de-penetration safeguard
@@ -191,9 +176,7 @@ local function pick_flight_waypoint(pos, home_pos, cur_yaw)
 			end
 			local pick = (#filtered > 0 and filtered[math.random(#filtered)]) or flowers[math.random(#flowers)]
 			local f_target = {x = pick.x, y = pick.y + 1.35, z = pick.z}
-			local node = core.get_node_or_nil(vector.round(f_target))
-			local def = node and core.registered_nodes[node.name]
-			if not def or (not def.walkable and (not def.liquidtype or def.liquidtype == "none")) then
+			if is_passable_node(vector.round(f_target), true) then
 				return f_target
 			end
 		end
@@ -228,9 +211,7 @@ local function pick_flight_waypoint(pos, home_pos, cur_yaw)
 		end
 
 		local candidate = {x = cand_x, y = cand_y, z = cand_z}
-		local cand_node = core.get_node_or_nil(vector.round(candidate))
-		local cand_def = cand_node and core.registered_nodes[cand_node.name]
-		if not cand_def or (not cand_def.walkable and (not cand_def.liquidtype or cand_def.liquidtype == "none")) then
+		if is_passable_node(vector.round(candidate), true) then
 			return candidate
 		end
 	end
@@ -262,9 +243,7 @@ local function step_depenetration_and_buoyancy(self, dtime, pos)
 	avoid_round.x = math.floor(pos.x + 0.5)
 	avoid_round.y = math.floor(pos.y + 0.5)
 	avoid_round.z = math.floor(pos.z + 0.5)
-	local current_block = core.get_node_or_nil(avoid_round)
-	local block_def = current_block and core.registered_nodes[current_block.name]
-	if block_def and block_def.walkable then
+	if is_walkable_node(avoid_round) then
 		local best_air_x, best_air_y, best_air_z = nil, nil, nil
 		local best_score = 999
 		local rx = avoid_round.x
@@ -276,9 +255,7 @@ local function step_depenetration_and_buoyancy(self, dtime, pos)
 			avoid_round.x = rx + off.x
 			avoid_round.y = ry + off.y
 			avoid_round.z = rz + off.z
-			local n = core.get_node_or_nil(avoid_round)
-			local d = n and core.registered_nodes[n.name]
-			if d and not d.walkable and (not d.liquidtype or d.liquidtype == "none") then
+			if is_passable_node(avoid_round, true) then
 				local dy_bonus = (off.y > 0) and -0.6 or ((off.y < 0) and 0.8 or 0.0)
 				local dist_sq = (avoid_round.x - pos.x)^2 + (avoid_round.y - pos.y)^2 + (avoid_round.z - pos.z)^2 + dy_bonus
 				if dist_sq < best_score then
@@ -293,9 +270,7 @@ local function step_depenetration_and_buoyancy(self, dtime, pos)
 		if not best_air_x then
 			for dy = 1, 8 do
 				local uy = ry + dy
-				local un = core.get_node_or_nil({x = rx, y = uy, z = rz})
-				local ud = un and core.registered_nodes[un.name]
-				if ud and not ud.walkable and (not ud.liquidtype or ud.liquidtype == "none") then
+				if is_passable_node({x = rx, y = uy, z = rz}, true) then
 					best_air_x = rx
 					best_air_y = uy
 					best_air_z = rz
@@ -376,9 +351,7 @@ local function step_timers_and_tricks(self, dtime)
 		if self._combat_timer <= 0 then
 			self._combat_timer = 0
 			self._combat_threat_pos = nil
-			if self._update_properties then
-				self:_update_properties()
-			end
+			self:_update_properties()
 		end
 	end
 
@@ -540,16 +513,15 @@ local function step_companion_perks(self, dtime, pos, owner_player)
 			local already_alerted = cache.recent_alerts[alert_key] and (now < cache.recent_alerts[alert_key])
 
 			if closest_threat_dist_sq <= 144.0 then
-				if pixie.signal_combat then
-					pixie.signal_combat(self.owner_name, 8.0, closest_threat_pos)
-				else
-					self._combat_timer = 8.0
-					self._combat_threat_pos = {
-						x = closest_threat_pos.x,
-						y = closest_threat_pos.y,
-						z = closest_threat_pos.z,
-					}
-				end
+				self._threat_dart_timer = 0
+				pixie.signal_combat(self.owner_name, 8.0, closest_threat_pos)
+			else
+				self._threat_target_pos = {
+					x = closest_threat_pos.x,
+					y = closest_threat_pos.y,
+					z = closest_threat_pos.z,
+				}
+				self._threat_dart_timer = 1.8
 			end
 
 			if loyalty >= 2 and (self._threat_cooldown or 0) <= 0 and not already_alerted then
@@ -590,7 +562,7 @@ local function step_companion_perks(self, dtime, pos, owner_player)
 						self._ore_cooldown = 24.0
 
 						local now = core.get_gametime()
-						local ore_cache = pixie.ore_cache
+						local ore_cache = pixie.ore_sensor.cache
 						local ore_key = core.hash_node_position(best_ore_pos)
 						local alert_entry = ore_cache and ore_cache.recent_alerts and ore_cache.recent_alerts[ore_key]
 						local is_global_alert_active = alert_entry and (now < alert_entry.expire)
@@ -690,18 +662,12 @@ local function step_follow_mode(self, dtime, pos, owner_player)
 	probe_tight_r.y = probe_y
 	probe_tight_r.z = math.floor(ppos.z + perp_z * 1.05 + 0.5)
 
-	local nl = core.get_node_or_nil(probe_tight_l)
-	local nr = core.get_node_or_nil(probe_tight_r)
-	local def_l = nl and core.registered_nodes[nl.name]
-	local def_r = nr and core.registered_nodes[nr.name]
-	local is_corridor = (def_l and def_l.walkable) and (def_r and def_r.walkable)
+	local is_corridor = is_walkable_node(probe_tight_l) and is_walkable_node(probe_tight_r)
 
 	probe_tight_f.x = math.floor(ppos.x + lhx * 1.4 + 0.5)
 	probe_tight_f.y = probe_y
 	probe_tight_f.z = math.floor(ppos.z + lhz * 1.4 + 0.5)
-	local nf = core.get_node_or_nil(probe_tight_f)
-	local def_f = nf and core.registered_nodes[nf.name]
-	local is_facing_wall = def_f and def_f.walkable
+	local is_facing_wall = is_walkable_node(probe_tight_f)
 
 	local in_tight_space = is_low_ceiling or is_corridor or is_facing_wall
 
@@ -851,12 +817,8 @@ local function step_follow_mode(self, dtime, pos, owner_player)
 	probe_sh_l.y = math.floor(sh_y + 0.5)
 	probe_sh_l.z = math.floor(ppos.z - perp_z * sh_dist + 0.5)
 
-	local n_shr = core.get_node_or_nil(probe_sh_r)
-	local n_shl = core.get_node_or_nil(probe_sh_l)
-	local def_shr = n_shr and core.registered_nodes[n_shr.name]
-	local def_shl = n_shl and core.registered_nodes[n_shl.name]
-	local r_blocked = def_shr and def_shr.walkable
-	local l_blocked = def_shl and def_shl.walkable
+	local r_blocked = is_walkable_node(probe_sh_r)
+	local l_blocked = is_walkable_node(probe_sh_l)
 
 	if r_blocked and not l_blocked then
 		preferred_side = -1
@@ -1347,6 +1309,7 @@ local function step_wild_mode(self, dtime, pos)
 		end
 	end
 
+	local custom_target_yaw = nil
 	if enticed_player then
 		local pp = enticed_player:get_pos()
 		local pdir = enticed_player:get_look_dir() or {x = 0, y = 0, z = 1}
@@ -1356,6 +1319,12 @@ local function step_wild_mode(self, dtime, pos)
 			z = pp.z + pdir.z * 2.2,
 		}
 		anchor_pos = avoid_solid_nodes(raw_anchor, pp)
+		custom_target_yaw = core.dir_to_yaw({x = pp.x - pos.x, y = 0, z = pp.z - pos.z})
+		self._entice_chime_timer = (self._entice_chime_timer or 0) - dtime
+		if enticed_dist <= 3.5 and self._entice_chime_timer <= 0 then
+			self._entice_chime_timer = 3.5 + math.random() * 2.0
+			x_mob_core.play_sound(self, "chime", {pos = pos, pitch = 1.25})
+		end
 		if (self._anim_lock or 0) <= 0 then
 			if enticed_dist > 3.0 then
 				is_moving_fast = true
@@ -1365,7 +1334,7 @@ local function step_wild_mode(self, dtime, pos)
 			end
 		end
 		if math.random() < dtime * 2.5 then
-			pixie.spawn_sparkles(pos, 1, self.owner_name)
+			pixie.spawn_sparkles(pos, 1)
 		end
 	elseif self._wander_pause and self._wander_pause > 0 then
 		local sy = get_ground_y(pos, 36, 4, true)
@@ -1382,7 +1351,7 @@ local function step_wild_mode(self, dtime, pos)
 			end
 		end
 		if math.random() < dtime * 2.0 then
-			pixie.spawn_sparkles(pos, 1, self.owner_name)
+			pixie.spawn_sparkles(pos, 1)
 		end
 	else
 		local dist_to_target = self._wander_target and vector.distance(pos, self._wander_target) or 999
@@ -1445,7 +1414,7 @@ local function step_wild_mode(self, dtime, pos)
 		end
 	end
 
-	return anchor_pos, is_moving_fast, nil, nil, nil
+	return anchor_pos, is_moving_fast, nil, nil, custom_target_yaw
 end
 
 ---Phase 5: Flight Steering, Obstacle Climbing, Inter-Pixie Repulsion & Yaw Integration
@@ -1481,6 +1450,7 @@ local function step_flight_steering(self, dtime, pos, anchor_pos, is_moving_fast
 			desired_vel.y = math.max(desired_vel.y, 1.8)
 		end
 	else
+		target_yaw = custom_target_yaw
 		if dist > 0.08 then
 			local max_spd = is_moving_fast and 5.5 or 1.6
 			local target_speed = math.min(max_spd, math.max(0.7, dist * 1.2))
@@ -1493,7 +1463,7 @@ local function step_flight_steering(self, dtime, pos, anchor_pos, is_moving_fast
 			steer_rate = is_moving_fast and 8.0 or 4.0
 
 			local h_dist_sq = delta.x * delta.x + delta.z * delta.z
-			if h_dist_sq > 0.04 then
+			if not target_yaw and h_dist_sq > 0.04 then
 				target_yaw = core.dir_to_yaw({x = delta.x, y = 0, z = delta.z})
 			end
 		else
@@ -1519,21 +1489,13 @@ local function step_flight_steering(self, dtime, pos, anchor_pos, is_moving_fast
 		local f_ny = math.floor(pos.y + 0.5)
 		local f_nz = math.floor(pos.z + f_dir_z * f_probe_dist + 0.5)
 
-		local f_node = core.get_node_or_nil({x = f_nx, y = f_ny, z = f_nz})
-		local f_def = f_node and core.registered_nodes[f_node.name]
-		if f_def and f_def.walkable then
-			local up1_node = core.get_node_or_nil({x = f_nx, y = f_ny + 1, z = f_nz})
-			local up1_def = up1_node and core.registered_nodes[up1_node.name]
-			if up1_def and not up1_def.walkable and (not up1_def.liquidtype or up1_def.liquidtype == "none") then
+		if is_walkable_node({x = f_nx, y = f_ny, z = f_nz}) then
+			if is_passable_node({x = f_nx, y = f_ny + 1, z = f_nz}, true) then
 				desired_vel.y = math.max(desired_vel.y, 2.4)
 				steer_rate = math.max(steer_rate, 8.0)
-			else
-				local up2_node = core.get_node_or_nil({x = f_nx, y = f_ny + 2, z = f_nz})
-				local up2_def = up2_node and core.registered_nodes[up2_node.name]
-				if up2_def and not up2_def.walkable and (not up2_def.liquidtype or up2_def.liquidtype == "none") then
-					desired_vel.y = math.max(desired_vel.y, 3.2)
-					steer_rate = math.max(steer_rate, 9.0)
-				end
+			elseif is_passable_node({x = f_nx, y = f_ny + 2, z = f_nz}, true) then
+				desired_vel.y = math.max(desired_vel.y, 3.2)
+				steer_rate = math.max(steer_rate, 9.0)
 			end
 		end
 	end
@@ -1548,20 +1510,16 @@ local function step_flight_steering(self, dtime, pos, anchor_pos, is_moving_fast
 			y = math.floor(pos.y + sep_y * 0.25 + 0.5),
 			z = math.floor(pos.z + sep_z * 0.25 + 0.5),
 		}
-		local t_node = core.get_node_or_nil(test_pos)
-		local t_def = t_node and core.registered_nodes[t_node.name]
-		if t_def and t_def.walkable then
-			local tx_node = core.get_node_or_nil({x = test_pos.x, y = math.floor(pos.y + 0.5), z = math.floor(pos.z + 0.5)})
-			local tx_def = tx_node and core.registered_nodes[tx_node.name]
-			if tx_def and tx_def.walkable then sep_x = 0 end
-
-			local tz_node = core.get_node_or_nil({x = math.floor(pos.x + 0.5), y = math.floor(pos.y + 0.5), z = test_pos.z})
-			local tz_def = tz_node and core.registered_nodes[tz_node.name]
-			if tz_def and tz_def.walkable then sep_z = 0 end
-
-			local ty_node = core.get_node_or_nil({x = math.floor(pos.x + 0.5), y = test_pos.y, z = math.floor(pos.z + 0.5)})
-			local ty_def = ty_node and core.registered_nodes[ty_node.name]
-			if ty_def and ty_def.walkable then sep_y = 0 end
+		if is_walkable_node(test_pos) then
+			if is_walkable_node({x = test_pos.x, y = math.floor(pos.y + 0.5), z = math.floor(pos.z + 0.5)}) then
+				sep_x = 0
+			end
+			if is_walkable_node({x = math.floor(pos.x + 0.5), y = math.floor(pos.y + 0.5), z = test_pos.z}) then
+				sep_z = 0
+			end
+			if is_walkable_node({x = math.floor(pos.x + 0.5), y = test_pos.y, z = math.floor(pos.z + 0.5)}) then
+				sep_y = 0
+			end
 		end
 
 		desired_vel.x = desired_vel.x + sep_x
@@ -1624,9 +1582,13 @@ x_mob_core.register_mob("pixie:pixie", {
 	death_duration = 1.67,
 	can_flinch = false,
 	friendly_fire = false,
-	drops = (pixie.compat and pixie.compat.get_drops()) or {
-		{ name = "default:mese_crystal_fragment", min = 1, max = 2, chance = 0.6 },
+	health_regen = {
+		rate = 0.5,
+		passive = true,
+		can_flee = false,
+		flee_threshold = 0,
 	},
+	drops = pixie.compat.get_drops(),
 	drop_options = {
 		particle_color = "#ffff88",
 		particles = true,
@@ -1663,8 +1625,8 @@ x_mob_core.register_mob("pixie:pixie", {
 	_update_properties = function(self)
 		if not self.object or not self.object:is_valid() then return end
 		local pheno_list = self.phenotypes or pixie_phenotypes
-		local p_idx = self.phenotype_idx or self.texture_no or 1
-		local pheno = pheno_list[p_idx] or pheno_list[1]
+		local tex_no = self.texture_no or 1
+		local pheno = pheno_list[tex_no] or pheno_list[1]
 		local label
 		local nametag_text = ""
 		local show_nametag = (self.show_nametag ~= false)
@@ -1755,7 +1717,6 @@ x_mob_core.register_mob("pixie:pixie", {
 		self._idle_flank_side = (math.random() < 0.5) and 1 or -1
 		self._idle_flank_fwd = 1.4
 		self._idle_flank_dist = 1.05
-		self._idle_flank_rear = 0.8
 		self._idle_flank_height = 1.7
 		self._shoulder_side = (math.random() < 0.5) and 1 or -1
 		self.pack_id = self.pack_id or "pixie_flock"
@@ -1777,10 +1738,8 @@ x_mob_core.register_mob("pixie:pixie", {
 			self.hp = data.hp
 		end
 
-		local owner = data.owner_name or data.owner
-		if owner then
-			self.owner_name = owner
-			self.owner = owner
+		if data.owner_name then
+			self.owner_name = data.owner_name
 			self.mode = data.mode or "follow"
 			self._persistent = true
 			self.custom_name = data.custom_name
@@ -1801,10 +1760,9 @@ x_mob_core.register_mob("pixie:pixie", {
 			end
 
 			-- Check 2: Mod storage active companion ID & recall generation check
-			local storage = mod_storage or (pixie and pixie.storage)
-			if not is_stale and storage then
-				local active_id = storage:get_string("pixie:" .. self.owner_name .. ":companion_id")
-				local active_gen = storage:get_int("pixie:" .. self.owner_name .. ":recall_gen")
+			if not is_stale and mod_storage then
+				local active_id = mod_storage:get_string("pixie:" .. self.owner_name .. ":companion_id")
+				local active_gen = mod_storage:get_int("pixie:" .. self.owner_name .. ":recall_gen")
 				if active_id and active_id ~= "" and self._companion_id and self._companion_id ~= "" then
 					if self._companion_id ~= active_id then
 						is_stale = true
@@ -1841,7 +1799,6 @@ x_mob_core.register_mob("pixie:pixie", {
 			pixie.bonding.active_player_pixies[self.owner_name] = self
 		else
 			self.owner_name = nil
-			self.owner = nil
 			self.custom_name = nil
 			self.pixie_name = nil
 			self.show_nametag = false
@@ -1853,23 +1810,20 @@ x_mob_core.register_mob("pixie:pixie", {
 			self.faction_list = {"pixie", "fairy", "neutral"}
 		end
 
-		if data.guard_pos or data.stay_pos then
-			self.guard_pos = data.guard_pos or data.stay_pos
+		if data.guard_pos then
+			self.guard_pos = data.guard_pos
 		end
-		if data.phenotype_idx or data.texture_no then
-			self.phenotype_idx = data.phenotype_idx or data.texture_no
-			self.texture_no = self.phenotype_idx
-		else
-			self.phenotype_idx = math.random(#(self.phenotypes or pixie_phenotypes))
-			self.texture_no = self.phenotype_idx
+		if data.texture_no then
+			self.texture_no = data.texture_no
+		elseif not self.texture_no then
+			self.texture_no = math.random(#(self.phenotypes or pixie_phenotypes))
+		end
+		if self.set_texture then
+			self:set_texture(self.texture_no)
 		end
 		if data.home_pos then
 			self._home_pos = data.home_pos
 		end
-
-		local pheno_list = self.phenotypes or pixie_phenotypes
-		self._chosen_textures = { pheno_list[self.phenotype_idx].tex }
-		self.base_texture = self._chosen_textures
 
 		self:_update_properties()
 
@@ -1911,19 +1865,17 @@ x_mob_core.register_mob("pixie:pixie", {
 		if not cur_hp and self.object and self.object:is_valid() then
 			cur_hp = self.object:get_hp()
 		end
-		local p_idx = self.phenotype_idx or self.texture_no or 1
+		local tex_no = self.texture_no or 1
 		local b_time = self.bond_time or 0
 		local l_tier = self.loyalty_tier or pixie.bonding.get_loyalty_tier(b_time)
 
 		return {
 			owner_name = self.owner_name,
-			owner = self.owner_name,
 			mode = self.mode,
 			guard_pos = self.guard_pos,
 			bond_time = b_time,
 			loyalty_tier = l_tier,
-			phenotype_idx = p_idx,
-			texture_no = p_idx,
+			texture_no = tex_no,
 			home_pos = self._home_pos,
 			hp = cur_hp or 30,
 			custom_name = self.custom_name,
@@ -1935,15 +1887,14 @@ x_mob_core.register_mob("pixie:pixie", {
 		}
 	end,
 
-	on_punch = function(self, puncher, time_from_last_punch, tool_capabilities, dir, damage)
-		if puncher and puncher:is_player() and (self.owner_name or self.owner) then
+	on_punch = function(self, puncher, _time_from_last_punch, _tool_capabilities, _dir, _damage)
+		if puncher and puncher:is_player() and self.owner_name then
 			return true
 		end
 
-		if (self.owner_name or self.owner) and puncher and puncher ~= self.object then
-			local owner_n = self.owner_name or self.owner
+		if self.owner_name and puncher and puncher ~= self.object then
 			local puncher_pos = (puncher and puncher:is_valid()) and puncher:get_pos() or nil
-			pixie.signal_combat(owner_n, 10.0, puncher_pos)
+			pixie.signal_combat(self.owner_name, 10.0, puncher_pos)
 
 			-- Acrobatic aerial evasion: 85% chance to dodge damage from mob melee swings
 			if math.random() < 0.85 then
@@ -1955,17 +1906,14 @@ x_mob_core.register_mob("pixie:pixie", {
 			end
 		end
 
-		if not self.owner_name and not self.owner and self.factions and self.factions["players"] then
+		if not self.owner_name and self.factions and self.factions["players"] then
 			self.factions["players"] = nil
 		end
 
-		local def = self._def or (self.name and core.registered_entities[self.name]) or {}
-		local res = x_mob_core.handle_punch(self, puncher, time_from_last_punch, tool_capabilities, dir, damage, def)
+		return false
+	end,
 
-		if self.is_dead or self.state == "dying" then
-			return res
-		end
-
+	on_hurt = function(self, puncher, _dmg)
 		x_mob_core.play_animation(self.object, "hurt", {speed = 1.2, loop = false, force = true})
 		self._anim_lock = 0.58
 		if math.random() < 0.40 then
@@ -1991,11 +1939,9 @@ x_mob_core.register_mob("pixie:pixie", {
 				self._wander_pause = 0
 			end
 		end
-
-		return res
 	end,
 
-	on_death = function(self, killer)
+	on_death = function(self, _killer)
 		if self.owner_name then
 			pixie.bonding.active_player_pixies[self.owner_name] = nil
 			local owner = core.get_player_by_name(self.owner_name)
@@ -2011,13 +1957,7 @@ x_mob_core.register_mob("pixie:pixie", {
 		local pos = self.object:get_pos()
 		if pos then
 			pixie.spawn_death(pos)
-			x_mob_core.play_sound(self, "death", {pos = pos})
-
-			local drops = (pixie.compat and pixie.compat.get_drops()) or self.drops
-			self._drops_spawned = true
-			x_mob_core.combat.loot.spawn_mob_drops(self, killer, drops, {particle_color = "#ffff88"})
 		end
-		x_mob_core.play_animation(self.object, "death", {speed = 1.0, loop = false, force = true})
 	end,
 
 	on_deactivate = function(self, removal)
@@ -2043,7 +1983,7 @@ x_mob_core.register_mob("pixie:pixie", {
 		local itemstack = clicker:get_wielded_item()
 		local item_name = itemstack:get_name()
 		local pheno_list = self.phenotypes or pixie_phenotypes
-		local pheno = pheno_list[self.phenotype_idx or 1] or pheno_list[1]
+		local pheno = pheno_list[self.texture_no or 1] or pheno_list[1]
 		local pos = self.object:get_pos()
 		if not pos then return end
 
@@ -2058,7 +1998,6 @@ x_mob_core.register_mob("pixie:pixie", {
 				pixie.bonding.release_companion(clicker, false)
 
 				self.owner_name = player_name
-				self.owner = player_name
 				self.mode = "follow"
 				self._persistent = true
 				self.hp = 30
@@ -2090,7 +2029,7 @@ x_mob_core.register_mob("pixie:pixie", {
 		end
 
 		-- Owner Interaction & Mode Cycling
-		if self.owner_name == player_name or self.owner == player_name then
+		if self.owner_name == player_name then
 			local ctrl = clicker:get_player_control()
 			if ctrl and ctrl.sneak and not is_taming_food(item_name) then
 				pixie.bonding.release_companion(clicker, true, self)
@@ -2167,7 +2106,7 @@ x_mob_core.register_mob("pixie:pixie", {
 		self._home_pos = self._home_pos or vector.round(pos)
 
 		-- Ensure released/wild pixies in world never retain player alliance
-		if not self.owner_name and not self.owner and self.factions and self.factions["players"] then
+		if not self.owner_name and self.factions and self.factions["players"] then
 			self.factions["players"] = nil
 		end
 
@@ -2219,14 +2158,7 @@ x_mob_core.register_mob("pixie:pixie", {
 
 -- Solitary Worldwide Spawn Registration
 x_mob_core.register_spawn("pixie:pixie", {
-	nodes = (pixie.compat and pixie.compat.get_spawn_nodes()) or {
-		"group:flower",
-		"group:flora",
-		"default:dirt_with_grass",
-		"default:dirt_with_coniferous_litter",
-		"default:dirt_with_rainforest_litter",
-		"everness:crystal_stone",
-	},
+	nodes = pixie.compat.get_spawn_nodes(),
 	chance = 8500,
 	active_object_count = 1,
 	group_min = 1,
