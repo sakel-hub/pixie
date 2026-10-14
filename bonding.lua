@@ -88,7 +88,7 @@ end
 ---@param pname string Player username
 ---@return boolean
 local function is_player_bonded_pixie(ent, pname)
-	return ent ~= nil and ent.name == "pixie:pixie" and (ent.owner_name == pname or ent.owner == pname)
+	return ent ~= nil and ent.name == "pixie:pixie" and ent.owner_name == pname
 end
 
 ---Safely invalidates, cleans up lights/particles, and removes a duplicate or stale companion entity.
@@ -109,7 +109,7 @@ function bonding.prune_companion_entity(ent)
 end
 
 -- Helper to find active or nearby companion entity for a player
-local function get_companion_entity(player_name)
+local function get_companion_entity(player_name, search_radius)
 	local ent = active_player_pixies[player_name]
 	if ent and ent.object and ent.object:is_valid() then
 		return ent
@@ -118,12 +118,12 @@ local function get_companion_entity(player_name)
 	if player and player:is_valid() then
 		local ppos = player:get_pos()
 		if ppos then
-			local nearby = core.get_objects_inside_radius(ppos, 16.0)
+			local nearby = core.get_objects_inside_radius(ppos, search_radius or 16.0)
 			for i = 1, #nearby do
 				local o = nearby[i]
 				if o and not o:is_player() then
 					local le = o:get_luaentity()
-					if le and le.name == "pixie:pixie" and (le.owner_name == player_name or le.owner == player_name) then
+					if is_player_bonded_pixie(le, player_name) then
 						return le
 					end
 				end
@@ -145,7 +145,7 @@ function bonding.save_bonded_pixie(player, pixie)
 	if not cur_hp and pixie.object and pixie.object:is_valid() then
 		cur_hp = pixie.object:get_hp()
 	end
-	local p_idx = pixie.phenotype_idx or pixie.texture_no or 1
+	local tex_no = pixie.texture_no or 1
 	local b_time = pixie.bond_time or 0
 	local l_tier = pixie.loyalty_tier or bonding.get_loyalty_tier(b_time)
 
@@ -172,8 +172,7 @@ function bonding.save_bonded_pixie(player, pixie)
 		guard_pos = g_pos,
 		bond_time = b_time,
 		loyalty_tier = l_tier,
-		phenotype_idx = p_idx,
-		texture_no = p_idx,
+		texture_no = tex_no,
 		hp = cur_hp or 30,
 		custom_name = pixie.custom_name,
 		pixie_name = pixie.pixie_name or S("Mystical Pixie"),
@@ -184,11 +183,10 @@ function bonding.save_bonded_pixie(player, pixie)
 	}
 	player:get_meta():set_string("pixie:bonded", core.serialize(save_data))
 
-	local storage = mod_storage or (pixie and pixie.storage)
-	if storage then
-		storage:set_string("pixie:" .. player_name .. ":companion_id", comp_id)
-		storage:set_int("pixie:" .. player_name .. ":recall_gen", cur_gen)
-		storage:set_string("pixie:" .. player_name .. ":mode", pixie.mode or "follow")
+	if mod_storage then
+		mod_storage:set_string("pixie:" .. player_name .. ":companion_id", comp_id)
+		mod_storage:set_int("pixie:" .. player_name .. ":recall_gen", cur_gen)
+		mod_storage:set_string("pixie:" .. player_name .. ":mode", pixie.mode or "follow")
 	end
 end
 
@@ -211,11 +209,10 @@ function bonding.clear_bonded_pixie(player)
 	local player_name = player:get_player_name()
 	local meta = player:get_meta()
 	meta:set_string("pixie:bonded", "")
-	local storage = mod_storage or (pixie and pixie.storage)
-	if storage and player_name and player_name ~= "" then
-		storage:set_string("pixie:" .. player_name .. ":companion_id", "")
-		storage:set_int("pixie:" .. player_name .. ":recall_gen", 0)
-		storage:set_string("pixie:" .. player_name .. ":mode", "")
+	if mod_storage and player_name and player_name ~= "" then
+		mod_storage:set_string("pixie:" .. player_name .. ":companion_id", "")
+		mod_storage:set_int("pixie:" .. player_name .. ":recall_gen", 0)
+		mod_storage:set_string("pixie:" .. player_name .. ":mode", "")
 	end
 end
 
@@ -224,7 +221,6 @@ end
 function bonding.untame_pixie(ent)
 	if not ent then return end
 	ent.owner_name = nil
-	ent.owner = nil
 	ent.custom_name = nil
 	ent.pixie_name = nil
 	ent.show_nametag = false
@@ -247,9 +243,7 @@ function bonding.untame_pixie(ent)
 	ent.state = "idle"
 	ent.action_timer = 0
 
-	if pixie.dynamic_light and pixie.dynamic_light.clear then
-		pixie.dynamic_light.clear(ent)
-	end
+	pixie.dynamic_light.clear(ent)
 
 	if ent.object and ent.object:is_valid() then
 		local pos = ent.object:get_pos()
@@ -267,9 +261,7 @@ function bonding.untame_pixie(ent)
 		})
 		-- Ensure armor groups are standard mortal damage groups
 		ent.object:set_armor_groups({ fleshy = 100 })
-		if ent._update_properties then
-			ent:_update_properties()
-		end
+		ent:_update_properties()
 		x_mob_core.play_animation(ent.object, "idle", {speed = 1.0, loop = true, force = true})
 	end
 end
@@ -282,9 +274,7 @@ function bonding.stow_bonded_pixie(player, pixie_ent, player_name)
 	if pixie_ent and pixie_ent.object and pixie_ent.object:is_valid() then
 		bonding.save_bonded_pixie(player, pixie_ent)
 		if pixie_ent.mode == "follow" then
-			if pixie.dynamic_light and pixie.dynamic_light.clear then
-				pixie.dynamic_light.clear(pixie_ent)
-			end
+			pixie.dynamic_light.clear(pixie_ent)
 			pixie_ent.object:remove()
 		end
 	end
@@ -321,7 +311,7 @@ function bonding.release_companion(player, notify, target_ent)
 			local o = nearby[i]
 			if o and o:is_valid() and not o:is_player() then
 				local le = o:get_luaentity()
-				if le and le.name == "pixie:pixie" and (le.owner_name == pname or le.owner == pname) then
+				if is_player_bonded_pixie(le, pname) then
 					bonding.untame_pixie(le)
 					had_bonded = true
 				end
@@ -339,7 +329,7 @@ function bonding.release_companion(player, notify, target_ent)
 
 	-- Clear player metadata
 	local saved = bonding.load_bonded_pixie(player)
-	if saved and (saved.owner_name or saved.owner) then
+	if saved and saved.owner_name then
 		had_bonded = true
 	end
 	bonding.clear_bonded_pixie(player)
@@ -350,6 +340,65 @@ function bonding.release_companion(player, notify, target_ent)
 	end
 
 	return had_bonded
+end
+
+---Internal helper to spawn and hydrate a following companion entity at `spawn_pos`.
+---@param player ObjectRef
+---@param player_name string
+---@param data table
+---@param spawn_pos Vector
+---@param trick_name string
+---@param sparkles integer
+---@param chime_pitch number
+---@return table|nil ent
+local function spawn_companion_entity(player, player_name, data, spawn_pos, trick_name, sparkles, chime_pitch)
+	local tex_no = data.texture_no or 1
+	local b_time = data.bond_time or 0
+	local l_tier = data.loyalty_tier or bonding.get_loyalty_tier(b_time)
+	local comp_id = data.companion_id or x_mob_core.generate_uuid()
+	local cur_gen = data.recall_gen or 0
+
+	local static_str = core.serialize({
+		owner_name = player_name,
+		mode = "follow",
+		guard_pos = nil,
+		bond_time = b_time,
+		loyalty_tier = l_tier,
+		texture_no = tex_no,
+		hp = data.hp or 30,
+		custom_name = data.custom_name,
+		pixie_name = data.pixie_name,
+		show_nametag = (data.show_nametag ~= false),
+		persistent = true,
+		recall_gen = cur_gen,
+		companion_id = comp_id,
+	})
+	local obj, ent = x_mob_core.spawn_mob(spawn_pos, "pixie:pixie", static_str)
+	if not obj or not obj:is_valid() then
+		return nil
+	end
+	if ent then
+		ent._persistent = true
+		ent.texture_no = tex_no
+		ent.owner_name = player_name
+		ent.mode = "follow"
+		ent.guard_pos = nil
+		ent._recall_gen = cur_gen
+		ent._companion_id = comp_id
+		ent.bond_time = b_time
+		ent.loyalty_tier = l_tier
+		ent.custom_name = data.custom_name
+		ent.pixie_name = data.pixie_name
+		ent.show_nametag = (data.show_nametag ~= false)
+		ent.hp = data.hp or 30
+		ent:_update_properties()
+		active_player_pixies[player_name] = ent
+		bonding.save_bonded_pixie(player, ent)
+	end
+	pixie.spawn_tame_burst(spawn_pos)
+	x_mob_core.play_sound(obj, "chime", {pos = spawn_pos, pitch = chime_pitch})
+	pixie.play_trick(obj, trick_name, {speed = 1.2, sparkles = sparkles, force = true})
+	return ent
 end
 
 ---Restores a player's bonded companion if missing from world (e.g. after /clearobjects, restart, or join)
@@ -369,9 +418,9 @@ function bonding.restore_companion(player)
 	-- without running expensive core.luaentities iterations
 	local data = bonding.load_bonded_pixie(player)
 	if not data or data.owner_name ~= player_name then return false end
-	if data.mode == "stay" then
+	if data.mode ~= "follow" then
 		-- Guarding companions persist directly in their mapblocks as static objects.
-		-- Never spawn an extra entity with add_entity for guarding companions on player join.
+		-- Never spawn an extra entity for guarding companions on player join.
 		return false
 	end
 
@@ -394,69 +443,10 @@ function bonding.restore_companion(player)
 	local ppos = player:get_pos()
 	if not ppos then return false end
 
-	local spawn_pos
-	if data.mode == "stay" then
-		-- Guarding companions persist directly in their mapblocks as static objects.
-		-- Never spawn an extra entity with add_entity for guarding companions on player join.
-		return false
-	elseif data.mode == "follow" then
-		spawn_pos = x_mob_core.avoid_solid_nodes({x = ppos.x, y = ppos.y + 1.2, z = ppos.z}, ppos)
-	else
-		return false
-	end
-	local p_idx = data.phenotype_idx or data.texture_no or 1
-	local b_time = data.bond_time or 0
-	local l_tier = data.loyalty_tier or bonding.get_loyalty_tier(b_time)
-	local comp_id = data.companion_id or x_mob_core.generate_uuid()
-	local cur_gen = data.recall_gen or 0
-
-	local static_str = core.serialize({
-		owner_name = player_name,
-		mode = "follow",
-		guard_pos = nil,
-		bond_time = b_time,
-		loyalty_tier = l_tier,
-		phenotype_idx = p_idx,
-		texture_no = p_idx,
-		hp = data.hp or 30,
-		custom_name = data.custom_name,
-		pixie_name = data.pixie_name,
-		show_nametag = (data.show_nametag ~= false),
-		persistent = true,
-		recall_gen = cur_gen,
-		companion_id = comp_id,
-	})
-	local obj = core.add_entity(spawn_pos, "pixie:pixie", static_str)
-	if obj and obj:is_valid() then
-		local ent = obj:get_luaentity()
-		if ent then
-			ent._persistent = true
-			ent.phenotype_idx = p_idx
-			ent.texture_no = p_idx
-			ent.owner_name = player_name
-			ent.owner = player_name
-			ent.mode = "follow"
-			ent.guard_pos = nil
-			ent._recall_gen = cur_gen
-			ent._companion_id = comp_id
-			ent.bond_time = b_time
-			ent.loyalty_tier = l_tier
-			ent.custom_name = data.custom_name
-			ent.pixie_name = data.pixie_name
-			ent.show_nametag = (data.show_nametag ~= false)
-			ent.hp = data.hp or 30
-			if ent._update_properties then
-				ent:_update_properties()
-			end
-			active_player_pixies[player_name] = ent
-			bonding.save_bonded_pixie(player, ent)
-		end
-		pixie.spawn_tame_burst(spawn_pos)
-		x_mob_core.play_sound(obj, "chime", {pos = spawn_pos, pitch = 1.2})
-		pixie.play_trick(obj, (math.random() < 0.5) and "spin_around" or "flip_front", {speed = 1.2, sparkles = 4})
-		return true
-	end
-	return false
+	local spawn_pos = x_mob_core.avoid_solid_nodes({x = ppos.x, y = ppos.y + 1.2, z = ppos.z}, ppos)
+	local trick_name = (math.random() < 0.5) and "spin_around" or "flip_front"
+	local ent = spawn_companion_entity(player, player_name, data, spawn_pos, trick_name, 4, 1.2)
+	return ent ~= nil
 end
 
 ---Recalls a player's bonded companion from afar (or triggers an acrobatic trick if already following).
@@ -475,7 +465,7 @@ function bonding.recall_companion(player, notify)
 	end
 
 	local data = bonding.load_bonded_pixie(player)
-	if not data or not (data.owner_name or data.owner) then
+	if not data or not data.owner_name then
 		if notify ~= false then
 			core.chat_send_player(player_name, core.colorize("#ffff88",
 				S("The Fairy Whistle plays a clear, ethereal tune, but no companion answers.")))
@@ -512,8 +502,6 @@ function bonding.recall_companion(player, notify)
 	-- Recall procedure: transition from guard ("stay") or lost follow state to following at player's side
 	-- 1. Invalidate any in-memory active entity for this player
 	if comp and comp.object and comp.object:is_valid() then
-		comp._invalidated = true
-		comp.is_dead = true
 		local old_pos = comp.object:get_pos()
 		bonding.prune_companion_entity(comp)
 		if old_pos then
@@ -530,7 +518,6 @@ function bonding.recall_companion(player, notify)
 	end
 
 	-- 2. Generate a fresh, globally unique companion instance UUID and advance generation token
-	local storage = mod_storage or (pixie and pixie.storage)
 	local new_gen = (data.recall_gen or 0) + 1
 	local new_id = x_mob_core.generate_uuid()
 	data.mode = "follow"
@@ -538,10 +525,10 @@ function bonding.recall_companion(player, notify)
 	data.recall_gen = new_gen
 	data.companion_id = new_id
 	player:get_meta():set_string("pixie:bonded", core.serialize(data))
-	if storage then
-		storage:set_string("pixie:" .. player_name .. ":companion_id", new_id)
-		storage:set_int("pixie:" .. player_name .. ":recall_gen", new_gen)
-		storage:set_string("pixie:" .. player_name .. ":mode", "follow")
+	if mod_storage then
+		mod_storage:set_string("pixie:" .. player_name .. ":companion_id", new_id)
+		mod_storage:set_int("pixie:" .. player_name .. ":recall_gen", new_gen)
+		mod_storage:set_string("pixie:" .. player_name .. ":mode", "follow")
 	end
 
 	-- 3. If previous guard position was in an unloaded chunk, schedule proactive asynchronous chunk purge
@@ -553,16 +540,8 @@ function bonding.recall_companion(player, notify)
 					local o = nearby[i]
 					if o and not o:is_player() and o:is_valid() then
 						local le = o:get_luaentity()
-						if le and le.name == "pixie:pixie" and (le.owner_name == player_name or le.owner == player_name) then
-							if le._companion_id ~= new_id then
-								le._invalidated = true
-								le.is_dead = true
-								le._removed = true
-								if pixie.dynamic_light and pixie.dynamic_light.clear then
-									pixie.dynamic_light.clear(le)
-								end
-								o:remove()
-							end
+						if is_player_bonded_pixie(le, player_name) and le._companion_id ~= new_id then
+							bonding.prune_companion_entity(le)
 						end
 					end
 				end
@@ -572,57 +551,8 @@ function bonding.recall_companion(player, notify)
 
 	-- 4. Spawn companion safely at player's side
 	local spawn_pos = x_mob_core.avoid_solid_nodes({x = ppos.x, y = ppos.y + 1.2, z = ppos.z}, ppos)
-	local p_idx = data.phenotype_idx or data.texture_no or 1
-	local b_time = data.bond_time or 0
-	local l_tier = data.loyalty_tier or bonding.get_loyalty_tier(b_time)
-
-	local static_str = core.serialize({
-		owner_name = player_name,
-		mode = "follow",
-		guard_pos = nil,
-		bond_time = b_time,
-		loyalty_tier = l_tier,
-		phenotype_idx = p_idx,
-		texture_no = p_idx,
-		hp = data.hp or 30,
-		custom_name = data.custom_name,
-		pixie_name = data.pixie_name,
-		show_nametag = (data.show_nametag ~= false),
-		persistent = true,
-		recall_gen = new_gen,
-		companion_id = new_id,
-	})
-
-	local obj = core.add_entity(spawn_pos, "pixie:pixie", static_str)
-	if obj and obj:is_valid() then
-		local ent = obj:get_luaentity()
-		if ent then
-			ent._persistent = true
-			ent.phenotype_idx = p_idx
-			ent.texture_no = p_idx
-			ent.owner_name = player_name
-			ent.owner = player_name
-			ent.mode = "follow"
-			ent.guard_pos = nil
-			ent._recall_gen = new_gen
-			ent._companion_id = new_id
-			ent.bond_time = b_time
-			ent.loyalty_tier = l_tier
-			ent.custom_name = data.custom_name
-			ent.pixie_name = data.pixie_name
-			ent.show_nametag = (data.show_nametag ~= false)
-			ent.hp = data.hp or 30
-			if ent._update_properties then
-				ent:_update_properties()
-			end
-			active_player_pixies[player_name] = ent
-			bonding.save_bonded_pixie(player, ent)
-		end
-
-		pixie.spawn_tame_burst(spawn_pos)
-		x_mob_core.play_sound(obj, "chime", {pos = spawn_pos, pitch = 1.3})
-		pixie.play_trick(obj, "somersault", {speed = 1.2, sparkles = 6, force = true})
-
+	local ent = spawn_companion_entity(player, player_name, data, spawn_pos, "somersault", 6, 1.3)
+	if ent then
 		if notify ~= false then
 			if prev_guard_pos and ppos then
 				local dist = math.floor(vector.distance(ppos, prev_guard_pos) + 0.5)
@@ -679,7 +609,7 @@ function bonding.signal_combat(player_or_name, duration, threat_pos)
 end
 
 -- Guardian Angel: Sacrificial Last Stand
--- When a player suffers fatal damage, a bonded companion sacrifices itself
+-- When a player suffers fatal damage, a Tier 3 (Ancient Guardian) bonded companion sacrifices itself
 -- to save the player's life, restoring the player to +5 HP.
 -- Strictly NO temporary speed boosts, jumps, or invulnerability frames.
 core.register_on_player_hpchange(function(player, hp_change, reason)
@@ -711,8 +641,13 @@ core.register_on_player_hpchange(function(player, hp_change, reason)
 		return hp_change
 	end
 
-	local comp = get_companion_entity(player_name)
+	local comp = get_companion_entity(player_name, 36.0)
 	if not comp or not comp.object or not comp.object:is_valid() then
+		return hp_change
+	end
+
+	local tier = comp.loyalty_tier or bonding.get_loyalty_tier(comp.bond_time or 0)
+	if tier < 3 then
 		return hp_change
 	end
 
@@ -746,7 +681,7 @@ core.register_on_player_hpchange(function(player, hp_change, reason)
 	})
 
 	local comp_name = comp.custom_name or comp.pixie_name or S("Mystical Pixie")
-	local tier_title = bonding.get_tier_title(comp.bond_time or 0)
+	local tier_title = bonding.get_tier_title(tier)
 	core.chat_send_player(player_name, core.colorize("#ffdd44",
 		S("✦ Your @1 (@2) sacrificed its life to save you from death! ✦", tier_title, comp_name)))
 
@@ -803,9 +738,7 @@ core.register_on_dieplayer(function(player)
 
 	local pixie_ent = active_player_pixies[name]
 	if pixie_ent then
-		if pixie.dynamic_light and pixie.dynamic_light.clear then
-			pixie.dynamic_light.clear(pixie_ent)
-		end
+		pixie.dynamic_light.clear(pixie_ent)
 		if pixie_ent.object and pixie_ent.object:is_valid() then
 			local ppos = pixie_ent.object:get_pos()
 			if ppos then
@@ -891,7 +824,7 @@ core.register_chatcommand("pixie", {
 		elseif lower_param == "status" then
 			local ent = get_companion_entity(name)
 			local data = bonding.load_bonded_pixie(player)
-			if (data and (data.owner_name or data.owner)) or (ent and (ent.owner_name == name or ent.owner == name)) then
+			if (data and data.owner_name) or (ent and ent.owner_name == name) then
 				local comp_name = (ent and (ent.custom_name or ent.pixie_name))
 					or (data and (data.custom_name or data.pixie_name))
 					or S("Mystical Pixie")
@@ -933,7 +866,7 @@ core.register_chatcommand("pixie", {
 		elseif lower_param:sub(1, 7) == "nametag" then
 			local arg = raw_param:sub(8):match("^%s*(.-)%s*$"):lower()
 			local data = bonding.load_bonded_pixie(player)
-			if not data or not (data.owner_name or data.owner) then
+			if not data or not data.owner_name then
 				return false, S("You do not currently have a bonded pixie companion.")
 			end
 
@@ -955,9 +888,7 @@ core.register_chatcommand("pixie", {
 			local ent = get_companion_entity(name)
 			if ent and ent.object and ent.object:is_valid() then
 				ent.show_nametag = new_vis
-				if ent._update_properties then
-					ent:_update_properties()
-				end
+				ent:_update_properties()
 			end
 
 			local comp_name = data.custom_name or data.pixie_name or S("Mystical Pixie")
@@ -969,7 +900,7 @@ core.register_chatcommand("pixie", {
 		elseif lower_param:sub(1, 6) == "rename" then
 			local new_name = raw_param:sub(7):match("^%s*(.-)%s*$") or ""
 			local data = bonding.load_bonded_pixie(player)
-			if not data or not (data.owner_name or data.owner) then
+			if not data or not data.owner_name then
 				return false, S("You do not currently have a bonded pixie companion.")
 			end
 
@@ -980,9 +911,7 @@ core.register_chatcommand("pixie", {
 				local ent = get_companion_entity(name)
 				if ent and ent.object and ent.object:is_valid() then
 					ent.custom_name = nil
-					if ent._update_properties then
-						ent:_update_properties()
-					end
+					ent:_update_properties()
 				end
 				return true, S("Custom name cleared. Pixie companion has returned to its default name.")
 			end
@@ -998,9 +927,7 @@ core.register_chatcommand("pixie", {
 			local ent = get_companion_entity(name)
 			if ent and ent.object and ent.object:is_valid() then
 				ent.custom_name = new_name
-				if ent._update_properties then
-					ent:_update_properties()
-				end
+				ent:_update_properties()
 			end
 			return true, S("Your pixie companion has been renamed to '@1'.", new_name)
 		else
