@@ -1,24 +1,35 @@
-# Enable or disable in-world floating nametags above tamed pixie companions.
-pixie_show_nametags (Show Pixie nametags) bool true
+# Show or hide floating name tags above tamed pixie companions.
+pixie_show_nametags (Show Pixie Nametags) bool true
 
-# Daylight shutoff threshold for dynamic lighting (0-15).
-# When natural ambient sunlight is at or above this level, dynamic lighting is disabled to conserve engine performance.
-pixie_light_natural_threshold (Dynamic Light Sunlight Shutoff Threshold) int 12 0 15
+# Sunlight level above which the pixie's personal lantern turns off to save energy (0-15).
+pixie_light_natural_threshold (Sunlight Lantern Turn-Off Level) int 12 0 15
 
-# Maximum Y elevation for pixie ore detection radar.
-# Pixies will skip ore scans when above this height, or when exposed to open daylight at noon.
-pixie_ore_max_y (Max Ore Detection Height) int 64 -31000 31000
+# Maximum height for underground ore detection. Pixies only sniff out ores below this elevation.
+pixie_ore_max_y (Max Ore Sniffing Height) int 64 -31000 31000
 
-# Loyalty tier thresholds in seconds of companion survival time.
-# Tier 1 (Fledgling): 0s to tier 2 threshold. Basic illumination.
-# Tier 2 (Loyal): Unlocks hostile threat radar and triage healing.
+# Journey time in seconds needed to reach Tier 2 (Loyal Companion).
+# Tier 1 (Fledgling): Basic following and warm lighting.
+# Tier 2 (Loyal): Unlocks danger radar and restorative healing sparks.
 pixie_loyalty_tier2_time (Loyal Companion Time in Seconds) int 1200 60 86400
 
-# Tier 3 (Ancient Guardian): Unlocks deep ore detection radar.
+# Journey time in seconds needed to reach Tier 3 (Ancient Guardian).
+# Tier 3 (Ancient Guardian): Unlocks deep ore sniffing and Guardian Angel sacrifice.
 pixie_loyalty_tier3_time (Guardian Companion Time in Seconds) int 3600 120 86400
 
-# Durability (number of uses) for the Fairy Whistle before it breaks.
-pixie_whistle_durability (Fairy Whistle Durability) int 30 1 1000
+# Number of times you can use the Fairy Whistle before it dissolves into fairy dust.
+pixie_whistle_durability (Fairy Whistle Uses) int 30 1 1000
 
-# Duration in seconds that a pixie companion maintains safe combat evasion after battle events.
-pixie_combat_retreat_duration (Combat Retreat Duration) float 8.0 2.0 30.0
+# Time in seconds that your companion stays safely perched behind your shoulder after a battle.
+pixie_combat_retreat_duration (Battle Safe Perch Duration) float 8.0 2.0 30.0
+
+# Chance for a wild pixie to spawn during exploration (lower = more common, higher = rarer).
+pixie_spawn_chance (Pixie Spawn Rarity) int 4200 500 20000
+
+# Maximum number of active pixies allowed within a 48-block radius.
+pixie_spawn_active_max (Max Active Pixies in Radius) int 2 1 6
+
+# Minimum elevation height for wild pixie spawning (1 = surface and above).
+pixie_spawn_min_elevation (Min Spawn Elevation) int 1 -31000 31000
+
+# Whether wild pixies drop floral traces and glowing stardust when defeated.
+pixie_enable_drops (Enable Pixie Defeat Drops) bool true

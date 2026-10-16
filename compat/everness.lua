@@ -19,11 +19,12 @@ compat.register_ore("everness:crystal_ore_ruby", "Ruby Crystal Ore", 85)
 compat.register_ore("everness:crystal_ore_amethyst", "Amethyst Crystal Ore", 85)
 compat.register_ore("everness:mineral_quartz", "Everness Quartz Ore", 70)
 
--- Spawning surfaces
+-- Spawning surfaces (walkable ground in crystal and coral meadows)
 compat.register_spawn_node("everness:crystal_grass")
 compat.register_spawn_node("everness:coral_grass")
-compat.register_spawn_node("everness:crystal_forest_leaves")
+compat.register_spawn_node("everness:bamboo_dirt")
+compat.register_spawn_node("everness:forsaken_tundra_dirt")
 
--- Loot drops on defeat (via x_mob_core)
-compat.register_drop({ name = "everness:quartz_crystal", min = 1, max = 2, chance = 0.40 })
-compat.register_drop({ name = "everness:crystal_emerald", min = 1, max = 1, chance = 0.20 })
+-- Loot drops on defeat (via x_mob_core: botanical traces & glowing crystal dust; no emeralds)
+compat.register_drop({ name = "everness:coral_flower", min = 1, max = 1, chance = 0.75 })
+compat.register_drop({ name = "everness:quartz_crystal", min = 1, max = 1, chance = 0.35 })
