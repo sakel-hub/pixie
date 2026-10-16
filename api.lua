@@ -16,6 +16,8 @@
 ---@field ore_sensor PixieOreSensor
 ---@field bonding PixieBondingSubsystem
 ---@field threat_cache PixieThreatCache
+---@field config PixieConfig
+---@field utils PixieUtils
 ---@field TRICK_DURATIONS table<string, number>
 ---@field TRICK_NAMES string[]
 ---@field spawn_sparkles fun(pos: Vector, count?: number, playername?: string)
@@ -35,6 +37,48 @@ local api = {}
 -- Obtain mod storage reference during load time (when get_current_modname() is guaranteed)
 local mod_storage = core.get_mod_storage()
 api.storage = mod_storage
+
+---@class PixieConfig
+---@field show_nametags boolean
+---@field light_natural_threshold integer
+---@field ore_max_y integer
+---@field loyalty_tier2_time integer
+---@field loyalty_tier3_time integer
+---@field whistle_durability integer
+---@field combat_retreat_duration number
+---@field spawn_chance integer
+---@field spawn_active_max integer
+---@field spawn_min_elevation integer
+---@field enable_drops boolean
+api.config = {
+	show_nametags = core.settings:get_bool("pixie_show_nametags", true),
+	light_natural_threshold = tonumber(core.settings:get("pixie_light_natural_threshold")) or 12,
+	ore_max_y = tonumber(core.settings:get("pixie_ore_max_y")) or 64,
+	loyalty_tier2_time = tonumber(core.settings:get("pixie_loyalty_tier2_time")) or 1200,
+	loyalty_tier3_time = tonumber(core.settings:get("pixie_loyalty_tier3_time")) or 3600,
+	whistle_durability = tonumber(core.settings:get("pixie_whistle_durability")) or 30,
+	combat_retreat_duration = tonumber(core.settings:get("pixie_combat_retreat_duration")) or 8.0,
+	spawn_chance = tonumber(core.settings:get("pixie_spawn_chance")) or 4200,
+	spawn_active_max = tonumber(core.settings:get("pixie_spawn_active_max")) or 2,
+	spawn_min_elevation = tonumber(core.settings:get("pixie_spawn_min_elevation")) or 1,
+	enable_drops = core.settings:get_bool("pixie_enable_drops", true),
+}
+
+---@class PixieUtils
+api.utils = {
+	dist_sq = function(a, b)
+		local dx = a.x - b.x
+		local dy = a.y - b.y
+		local dz = a.z - b.z
+		return dx * dx + dy * dy + dz * dz
+	end,
+	is_valid_obj = function(obj)
+		return obj ~= nil and obj.is_valid and obj:is_valid()
+	end,
+	floor_vector = function(v)
+		return {x = math.floor(v.x), y = math.floor(v.y), z = math.floor(v.z)}
+	end,
+}
 
 ---Calibrated duration locks in seconds for each trick animation
 api.TRICK_DURATIONS = {

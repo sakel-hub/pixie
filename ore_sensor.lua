@@ -319,8 +319,7 @@ core.register_on_mods_loaded(function()
 end)
 
 local DEFAULT_MAX_ORE_Y = 64
-local setting_max_y = tonumber(core.settings:get("pixie_ore_max_y"))
-ore_sensor.max_ore_y = setting_max_y ~= nil and setting_max_y or DEFAULT_MAX_ORE_Y
+ore_sensor.max_ore_y = (pixie.config and pixie.config.ore_max_y) or DEFAULT_MAX_ORE_Y
 
 ---Evaluates whether a position is eligible for ore sensing based on elevation and subterranean lighting.
 ---Bypasses scanning on the open surface (even at night) while preserving detection in mountain caves.
@@ -388,11 +387,7 @@ function ore_sensor.scan_area(center, radius_h, radius_v)
 	-- Standard scan uses radius_h == 6 and radius_v == 3
 	local is_std_radius = (radius_h == 6 and radius_v == 3)
 	if is_std_radius and cache.last_scan_pos and (now - cache.last_scan_time < 3.0) then
-		local dx = center.x - cache.last_scan_pos.x
-		local dy = center.y - cache.last_scan_pos.y
-		local dz = center.z - cache.last_scan_pos.z
-		local dist_sq = dx * dx + dy * dy + dz * dz
-		if dist_sq <= 4.0 then
+		if pixie.utils.dist_sq(center, cache.last_scan_pos) <= 4.0 then
 			-- Case A: Previously scanned volume was empty (no ores nearby)
 			if not cache.cached_ore_pos then
 				return nil, nil, 0, nil
@@ -503,13 +498,8 @@ if core.register_on_dignode then
 		local comp = pixie.bonding and pixie.bonding.active_player_pixies[player_name]
 		if comp and comp.object and comp.object:is_valid() then
 			local cpos = comp.object:get_pos()
-			if cpos and pos then
-				local dx = cpos.x - pos.x
-				local dy = cpos.y - pos.y
-				local dz = cpos.z - pos.z
-				if (dx * dx + dy * dy + dz * dz) <= 256.0 then
-					pixie.trigger_celebration(comp)
-				end
+			if cpos and pos and pixie.utils.dist_sq(cpos, pos) <= 256.0 then
+				pixie.trigger_celebration(comp)
 			end
 		end
 	end)

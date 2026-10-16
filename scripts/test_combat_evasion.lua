@@ -8,7 +8,9 @@
 -- Mock minimal Luanti engine environment
 local registered_on_punchplayer = {}
 local registered_on_hpchange = {}
+local registered_on_leaveplayer = {}
 local registered_entities = {}
+local registered_nodes = setmetatable({}, {__index = function() return {walkable = false} end})
 local chat_messages = {}
 local played_sounds = {}
 local mock_player
@@ -45,6 +47,17 @@ core = {
 		registered_entities[name] = def
 	end,
 	registered_entities = registered_entities,
+	register_node = function(name, def)
+		registered_nodes[name] = def
+	end,
+	swap_node = function() end,
+	get_node_timer = function()
+		return {
+			start = function() end,
+			stop = function() end,
+			is_started = function() return true end,
+		}
+	end,
 	register_on_punchplayer = function(fn)
 		registered_on_punchplayer[#registered_on_punchplayer + 1] = fn
 	end,
@@ -52,9 +65,12 @@ core = {
 		registered_on_hpchange[#registered_on_hpchange + 1] = fn
 	end,
 	register_on_dieplayer = function() end,
-	register_on_leaveplayer = function() end,
+	register_on_leaveplayer = function(fn)
+		registered_on_leaveplayer[#registered_on_leaveplayer + 1] = fn
+	end,
 	register_on_shutdown = function() end,
 	register_on_joinplayer = function() end,
+	register_on_mods_loaded = function() end,
 	register_globalstep = function() end,
 	chat_send_player = function(target, msg)
 		chat_messages[#chat_messages + 1] = {target = target, msg = msg}
@@ -67,8 +83,9 @@ core = {
 	colorize = function(_, text) return text end,
 	register_chatcommand = function() end,
 	find_nodes_in_area = function() return {} end,
-	registered_nodes = setmetatable({}, {__index = function() return {walkable = false} end}),
+	registered_nodes = registered_nodes,
 	get_node_or_nil = function() return {name = "air"} end,
+	get_natural_light = function() return 0 end,
 	get_objects_inside_radius = function() return {} end,
 	get_gametime = function() return 100 end,
 	get_player_by_name = function(name)
@@ -112,6 +129,9 @@ vector = {
 	round = function(v)
 		return {x = math.floor(v.x + 0.5), y = math.floor(v.y + 0.5), z = math.floor(v.z + 0.5)}
 	end,
+	equals = function(a, b)
+		return a and b and a.x == b.x and a.y == b.y and a.z == b.z
+	end,
 	normalize = function(v)
 		local l = math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z)
 		if l == 0 then return {x = 0, y = 0, z = 0} end
@@ -121,11 +141,14 @@ vector = {
 
 -- Mock x_mob_core
 local listeners = {}
+local registered_spawns = {}
 x_mob_core = {
 	register_mob = function(name, def)
 		registered_entities[name] = def
 	end,
-	register_spawn = function() end,
+	register_spawn = function(name, def)
+		registered_spawns[name] = def
+	end,
 	listen = function(event, fn)
 		listeners[event] = listeners[event] or {}
 		table.insert(listeners[event], fn)
@@ -166,7 +189,7 @@ pixie.spawn_tame_burst = function() end
 pixie.spawn_death = function() end
 pixie.spawn_guardian_sacrifice = function() end
 pixie.spawn_whistle_melody = function() end
-pixie.dynamic_light = {update = function() end, clear = function() end}
+dofile(modpath .. "/dynamic_light.lua")
 pixie.ore_sensor = {can_scan = function() return false end, cache = {recent_alerts = {}}}
 
 dofile(modpath .. "/compat/init.lua")
@@ -187,6 +210,12 @@ mock_player = {
 	get_velocity = function() return {x = 0, y = 0, z = 0} end,
 	get_look_dir = function() return {x = 0, y = 0, z = 1} end, -- Looking North (+Z)
 	get_look_horizontal = function() return 0 end,
+	get_wielded_item = function()
+		return {
+			get_name = function() return "" end,
+			is_empty = function() return true end,
+		}
+	end,
 	get_meta = function()
 		return {
 			set_string = function() end,
@@ -214,6 +243,7 @@ local mock_obj = {
 	set_yaw = function() end,
 	get_yaw = function() return 0 end,
 	get_luaentity = function(self) return self.ent end,
+	remove = function() end,
 }
 
 local pixie_def = registered_entities["pixie:pixie"]
@@ -396,5 +426,221 @@ print("Test 12: Wild Pixie Single-Punch Delegation & on_hurt Flee Verified.")
 local celebrated = pixie.trigger_celebration(comp_ent)
 assert(celebrated == true, "Test 13 Failed: pixie.trigger_celebration must return true for valid companion")
 print("Test 13: Mining Celebration Trigger API Verified.")
+
+-- Test 14: Spawning Configuration & Multi-Game Walkable Surfaces
+local spawn_def = registered_spawns["pixie:pixie"]
+assert(spawn_def ~= nil, "Test 14 Failed: pixie:pixie must be registered for natural spawning")
+assert(spawn_def.chance == 4200, "Test 14 Failed: default spawn chance must be 4200")
+assert(spawn_def.active_object_count == 2, "Test 14 Failed: active_object_count must be 2")
+assert(spawn_def.min_elevation == 1, "Test 14 Failed: min_elevation must be 1")
+assert(spawn_def.max_elevation == 31000, "Test 14 Failed: max_elevation must be 31000")
+assert(spawn_def.min_light == 5 and spawn_def.max_light == 15, "Test 14 Failed: light bounds must be 5 to 15")
+
+local spawn_nodes = pixie.compat.get_spawn_nodes()
+local node_set = {}
+for _, n in ipairs(spawn_nodes) do
+	node_set[n] = true
+end
+assert(node_set["default:dirt_with_grass"] == true, "Test 14 Failed: MTG dirt_with_grass missing")
+assert(node_set["ethereal:green_dirt"] == true, "Test 14 Failed: Ethereal green_dirt missing")
+assert(node_set["mcl_core:dirt_with_grass"] == true, "Test 14 Failed: MCL dirt_with_grass missing")
+assert(node_set["mcl_core:podzol"] == true, "Test 14 Failed: MCL podzol missing")
+assert(node_set["everness:crystal_grass"] == true, "Test 14 Failed: Everness crystal_grass missing")
+assert(node_set["group:flora"] == nil, "Test 14 Failed: non-walkable group:flora must be excluded from spawn nodes")
+assert(node_set["mcl_flowers:poppy"] == nil, "Test 14 Failed: non-walkable mcl_flowers:poppy must be excluded from spawn nodes")
+print("Test 14: Spawning Configuration & Multi-Game Walkable Surfaces Verified.")
+
+-- Test 15: Balanced Drops & Tamed Pet Drop Suppression
+local drops = pixie.compat.get_drops()
+for _, drop in ipairs(drops) do
+	assert(drop.name ~= "default:diamond", "Test 15 Failed: Diamonds must not drop from pixies")
+	assert(drop.name ~= "mcl_core:diamond", "Test 15 Failed: Diamonds must not drop from pixies")
+	assert(drop.name ~= "everness:crystal_emerald", "Test 15 Failed: Emeralds must not drop from pixies")
+end
+
+-- Tamed companion death must set _drops_spawned = true to suppress drops
+local tamed_death_ent = {
+	object = mock_obj,
+	name = "pixie:pixie",
+	owner_name = "TestPlayer",
+	mode = "follow",
+	hp = 0,
+}
+setmetatable(tamed_death_ent, {__index = pixie_def})
+tamed_death_ent:on_death(mock_player)
+assert(tamed_death_ent._drops_spawned == true, "Test 15 Failed: Tamed companion must suppress drops on death")
+
+-- Wild pixie death must NOT suppress drops by default
+local wild_death_ent = {
+	object = mock_obj,
+	name = "pixie:pixie",
+	owner_name = nil,
+	mode = "wild",
+	hp = 0,
+}
+setmetatable(wild_death_ent, {__index = pixie_def})
+wild_death_ent:on_death(mock_player)
+assert(wild_death_ent._drops_spawned == nil, "Test 15 Failed: Wild pixie must not suppress drops on death")
+
+print("Test 15: Balanced Drops & Tamed Pet Drop Suppression Verified.")
+
+-- Test 16: Threat Cache Pruning & Player Leave Cleanup
+local now = core.get_gametime()
+pixie.threat_cache.recent_alerts["expired_threat"] = now - 5
+pixie.threat_cache.recent_alerts["active_threat"] = now + 15
+pixie.threat_cache._last_prune = now - 20
+
+local perk_ent = {
+	object = mock_obj,
+	name = "pixie:pixie",
+	owner_name = "SaKeL",
+	mode = "follow",
+	bond_time = 2000,
+	loyalty_tier = 2,
+	_threat_scan_timer = 0,
+	_threat_cooldown = 0,
+}
+setmetatable(perk_ent, {__index = pixie_def})
+mock_obj.ent = perk_ent
+pixie.bonding.active_player_pixies["SaKeL"] = perk_ent
+perk_ent:on_step(0.1)
+
+assert(pixie.threat_cache.recent_alerts["expired_threat"] == nil, "Test 16 Failed: expired threat alert must be pruned")
+assert(pixie.threat_cache.recent_alerts["active_threat"] ~= nil, "Test 16 Failed: active threat alert must remain")
+
+pixie.threat_cache.player_scans["LeavingPlayer"] = {
+	time = now,
+	pos = {x = 10, y = 5, z = 10},
+	threats = {},
+}
+local mock_leaving_player = {
+	is_player = function() return true end,
+	is_valid = function() return true end,
+	get_player_name = function() return "LeavingPlayer" end,
+}
+for _, fn in ipairs(registered_on_leaveplayer) do
+	fn(mock_leaving_player)
+end
+assert(pixie.threat_cache.player_scans["LeavingPlayer"] == nil, "Test 16 Failed: player_scans must be cleared on leaveplayer")
+print("Test 16: Threat Cache Pruning & Player Leave Cleanup Verified.")
+
+-- Test 17: Dynamic Light Timer Defensive Object Handling
+local light_node = registered_nodes["pixie:light"]
+assert(light_node ~= nil, "Test 17 Failed: pixie:light must be registered")
+assert(type(light_node.on_timer) == "function", "Test 17 Failed: pixie:light must have on_timer handler")
+
+local timer_res1 = light_node.on_timer({x = 0, y = 0, z = 0})
+assert(timer_res1 == false, "Test 17 Failed: on_timer must return false when no pixie is nearby")
+
+local old_get_objs = core.get_objects_inside_radius
+core.get_objects_inside_radius = function()
+	return {
+		mock_player,
+		{ is_valid = function() return false end },
+		{ is_valid = function() return true end, is_player = function() return false end, get_luaentity = function() return nil end },
+	}
+end
+local timer_res2 = light_node.on_timer({x = 0, y = 0, z = 0})
+assert(timer_res2 == false, "Test 17 Failed: on_timer must safely handle players and invalid objects without error")
+
+core.get_objects_inside_radius = function()
+	return {
+		{
+			is_valid = function() return true end,
+			is_player = function() return false end,
+			get_luaentity = function() return { name = "pixie:pixie" } end,
+		}
+	}
+end
+local timer_res3 = light_node.on_timer({x = 0, y = 0, z = 0})
+assert(timer_res3 == true, "Test 17 Failed: on_timer must return true when valid pixie is inside radius")
+core.get_objects_inside_radius = old_get_objs
+print("Test 17: Dynamic Light Timer Defensive Object Handling Verified.")
+
+-- Test 18: Integer Coordinates in Area Queries & Utils
+assert(pixie.utils.floor_vector({x = 10.74, y = 5.22, z = -14.88}).x == 10, "Test 18 Failed: floor_vector x mismatch")
+assert(pixie.utils.floor_vector({x = 10.74, y = 5.22, z = -14.88}).y == 5, "Test 18 Failed: floor_vector y mismatch")
+assert(pixie.utils.floor_vector({x = 10.74, y = 5.22, z = -14.88}).z == -15, "Test 18 Failed: floor_vector z mismatch")
+
+local recorded_minp, recorded_maxp
+local old_find_nodes = core.find_nodes_in_area
+core.find_nodes_in_area = function(minp, maxp)
+	recorded_minp = minp
+	recorded_maxp = maxp
+	return {}
+end
+
+local wild_waypoint_ent = {
+	object = mock_obj,
+	name = "pixie:pixie",
+	mode = "wild",
+	_home_pos = {x = 10.5, y = 5.5, z = 10.5},
+	_wander_timer = 0,
+	orbit_t = 0,
+}
+setmetatable(wild_waypoint_ent, {__index = pixie_def})
+for _ = 1, 30 do
+	wild_waypoint_ent:on_step(0.1)
+	if recorded_minp then
+		break
+	end
+end
+if recorded_minp and recorded_maxp then
+	assert(recorded_minp.x == math.floor(recorded_minp.x), "Test 18 Failed: minp.x must be integer")
+	assert(recorded_minp.y == math.floor(recorded_minp.y), "Test 18 Failed: minp.y must be integer")
+	assert(recorded_minp.z == math.floor(recorded_minp.z), "Test 18 Failed: minp.z must be integer")
+	assert(recorded_maxp.x == math.floor(recorded_maxp.x), "Test 18 Failed: maxp.x must be integer")
+	assert(recorded_maxp.y == math.floor(recorded_maxp.y), "Test 18 Failed: maxp.y must be integer")
+	assert(recorded_maxp.z == math.floor(recorded_maxp.z), "Test 18 Failed: maxp.z must be integer")
+end
+core.find_nodes_in_area = old_find_nodes
+print("Test 18: Integer Coordinates in Area Queries & Utils Verified.")
+
+-- Test 19: Centralized Configuration Registry & Hostile State Detection
+assert(type(pixie.config) == "table", "Test 19 Failed: pixie.config must exist")
+assert(pixie.config.loyalty_tier2_time == 1200, "Test 19 Failed: default tier2 time mismatch")
+assert(pixie.config.loyalty_tier3_time == 3600, "Test 19 Failed: default tier3 time mismatch")
+assert(pixie.config.whistle_durability == 30, "Test 19 Failed: default whistle durability mismatch")
+assert(pixie.config.combat_retreat_duration == 8.0, "Test 19 Failed: default combat retreat duration mismatch")
+assert(pixie.config.spawn_chance == 4200, "Test 19 Failed: default spawn chance mismatch")
+assert(pixie.config.spawn_active_max == 2, "Test 19 Failed: default spawn active max mismatch")
+assert(pixie.config.spawn_min_elevation == 1, "Test 19 Failed: default spawn min elevation mismatch")
+assert(pixie.config.show_nametags == true, "Test 19 Failed: default show_nametags mismatch")
+assert(pixie.config.enable_drops == true, "Test 19 Failed: default enable_drops mismatch")
+
+assert(pixie.utils.dist_sq({x = 1, y = 2, z = 3}, {x = 4, y = 2, z = 7}) == 25, "Test 19 Failed: dist_sq mismatch")
+
+local dying_mob_obj = {
+	is_valid = function() return true end,
+	is_player = function() return false end,
+	get_hp = function() return 10 end,
+	get_luaentity = function()
+		return {
+			name = "mobs_monster:dungeon_master",
+			hp = 10,
+			state = "dying",
+			type = "monster",
+		}
+	end,
+}
+local is_threat1, _ = pixie.compat.is_hostile(dying_mob_obj, mock_player)
+assert(is_threat1 == false, "Test 19 Failed: Dying mob must not be flagged as active hostile threat")
+
+local dead_flag_mob_obj = {
+	is_valid = function() return true end,
+	is_player = function() return false end,
+	get_hp = function() return 10 end,
+	get_luaentity = function()
+		return {
+			name = "mobs_monster:dungeon_master",
+			hp = 10,
+			is_dead = true,
+			type = "monster",
+		}
+	end,
+}
+local is_threat2, _ = pixie.compat.is_hostile(dead_flag_mob_obj, mock_player)
+assert(is_threat2 == false, "Test 19 Failed: Mob with is_dead == true must not be flagged as active hostile threat")
+print("Test 19: Centralized Configuration Registry & Hostile State Detection Verified.")
 
 print("========== ALL TESTS PASSED SUCCESSFULLY! ==========")

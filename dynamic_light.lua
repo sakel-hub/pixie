@@ -31,9 +31,12 @@ core.register_node("pixie:light", {
 	on_timer = function(pos)
 		local objs = core.get_objects_inside_radius(pos, 4.5)
 		for i = 1, #objs do
-			local ent = objs[i]:get_luaentity()
-			if ent and ent.name == "pixie:pixie" then
-				return true
+			local obj = objs[i]
+			if obj and obj:is_valid() and not obj:is_player() then
+				local ent = obj:get_luaentity()
+				if ent and ent.name == "pixie:pixie" then
+					return true
+				end
 			end
 		end
 		core.swap_node(pos, {name = "air"})
@@ -54,8 +57,8 @@ local CARDINAL_LIGHT_OFFSETS = {
 local light_probe = {x = 0, y = 0, z = 0}
 
 local DEFAULT_NATURAL_THRESHOLD = 12
-local setting_nat_thresh = tonumber(core.settings:get("pixie_light_natural_threshold"))
-dynamic_light.natural_light_threshold = setting_nat_thresh ~= nil and setting_nat_thresh or DEFAULT_NATURAL_THRESHOLD
+dynamic_light.natural_light_threshold = (pixie.config and pixie.config.light_natural_threshold)
+	or DEFAULT_NATURAL_THRESHOLD
 
 -- Minimum displacement squared (2.0 blocks) before relocating an active light node
 local MIN_LIGHT_MOVE_DIST_SQ = 4.0
@@ -123,10 +126,7 @@ function dynamic_light.update(self, pos)
 	-- borrow that light source and avoid creating a redundant light node.
 	for other_self, other_pos in pairs(dynamic_light.active_lights) do
 		if other_self ~= self and other_pos then
-			local odx = other_pos.x - target_light_pos.x
-			local ody = other_pos.y - target_light_pos.y
-			local odz = other_pos.z - target_light_pos.z
-			if (odx * odx + ody * ody + odz * odz) <= 16.0 then
+			if pixie.utils.dist_sq(other_pos, target_light_pos) <= 16.0 then
 				local other_node = core.get_node_or_nil(other_pos)
 				if other_node and other_node.name == "pixie:light" then
 					dynamic_light.clear(self)
@@ -140,10 +140,7 @@ function dynamic_light.update(self, pos)
 	-- A light source with radius 13 illuminates virtually the identical volume within 2.0 blocks.
 	-- Skip swapping if displacement from existing active light is < 2.0 blocks (dist_sq < 4.0).
 	if self._last_light_pos then
-		local dx = self._last_light_pos.x - target_light_pos.x
-		local dy = self._last_light_pos.y - target_light_pos.y
-		local dz = self._last_light_pos.z - target_light_pos.z
-		local dist_sq = dx * dx + dy * dy + dz * dz
+		local dist_sq = pixie.utils.dist_sq(self._last_light_pos, target_light_pos)
 
 		if dist_sq < MIN_LIGHT_MOVE_DIST_SQ then
 			-- Verify existing light node is still intact in the world

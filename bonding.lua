@@ -29,15 +29,11 @@ bonding.active_player_pixies = active_player_pixies
 
 local DEFAULT_TIER2_TIME = 1200
 local DEFAULT_TIER3_TIME = 3600
-local setting_tier2 = tonumber(core.settings:get("pixie_loyalty_tier2_time"))
-local setting_tier3 = tonumber(core.settings:get("pixie_loyalty_tier3_time"))
-local tier2_thresh = setting_tier2 ~= nil and setting_tier2 or DEFAULT_TIER2_TIME
-local tier3_thresh = setting_tier3 ~= nil and setting_tier3 or DEFAULT_TIER3_TIME
+local tier2_thresh = (pixie.config and pixie.config.loyalty_tier2_time) or DEFAULT_TIER2_TIME
+local tier3_thresh = (pixie.config and pixie.config.loyalty_tier3_time) or DEFAULT_TIER3_TIME
 
 local DEFAULT_COMBAT_DURATION = 8.0
-local setting_combat_dur = tonumber(core.settings:get("pixie_combat_retreat_duration"))
-local combat_retreat_duration = (setting_combat_dur and setting_combat_dur > 0)
-	and setting_combat_dur or DEFAULT_COMBAT_DURATION
+local combat_retreat_duration = (pixie.config and pixie.config.combat_retreat_duration) or DEFAULT_COMBAT_DURATION
 
 ---Gets the loyalty tier (1, 2, or 3) from total bond survival time in seconds.
 ---@param bond_time number Total seconds bonded
@@ -657,7 +653,7 @@ core.register_on_player_hpchange(function(player, hp_change, reason)
 		return hp_change
 	end
 
-	local dist_sq = (ppos.x - cpos.x)^2 + (ppos.y - cpos.y)^2 + (ppos.z - cpos.z)^2
+	local dist_sq = pixie.utils.dist_sq(ppos, cpos)
 	if comp.mode == "stay" and dist_sq > 256.0 then
 		return hp_change
 	end
@@ -709,11 +705,8 @@ do
 			local player_name = target:get_player_name()
 			local mpos = (mob and mob.object and mob.object:is_valid()) and mob.object:get_pos() or nil
 			local ppos = target:get_pos()
-			if mpos and ppos then
-				local d_sq = (mpos.x - ppos.x)^2 + (mpos.y - ppos.y)^2 + (mpos.z - ppos.z)^2
-				if d_sq <= 144.0 then -- 12m proximity threshold
-					bonding.signal_combat(player_name, nil, mpos)
-				end
+			if mpos and ppos and pixie.utils.dist_sq(mpos, ppos) <= 144.0 then -- 12m proximity threshold
+				bonding.signal_combat(player_name, nil, mpos)
 			end
 		end
 	end)
@@ -764,6 +757,10 @@ core.register_on_leaveplayer(function(player)
 	local pixie_ent = active_player_pixies[player_name]
 	if pixie_ent then
 		bonding.stow_bonded_pixie(player, pixie_ent, player_name)
+	end
+
+	if pixie.threat_cache and pixie.threat_cache.player_scans then
+		pixie.threat_cache.player_scans[player_name] = nil
 	end
 end)
 

@@ -7,9 +7,8 @@
 local S = core.get_translator("pixie")
 
 local DEFAULT_WHISTLE_DURABILITY = 30
-local setting_durability = tonumber(core.settings:get("pixie_whistle_durability"))
-local WHISTLE_DURABILITY = (setting_durability and setting_durability > 0)
-	and setting_durability or DEFAULT_WHISTLE_DURABILITY
+local WHISTLE_DURABILITY = (pixie.config and pixie.config.whistle_durability)
+	or DEFAULT_WHISTLE_DURABILITY
 local WEAR_PER_USE = math.floor(65535 / WHISTLE_DURABILITY)
 
 local function handle_whistle(itemstack, user, pointed_thing)

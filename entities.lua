@@ -12,6 +12,7 @@ local get_headroom = x_mob_core.get_headroom
 local get_ground_y = x_mob_core.get_ground_y
 local is_walkable_node = x_mob_core.utils.is_walkable_node
 local is_passable_node = x_mob_core.utils.is_passable_node
+local atan2 = math.atan2 or math.atan
 
 ---If entity is in or immediately touching liquid, scans upward to find the liquid surface elevation.
 ---@param pos Vector Entity position
@@ -98,6 +99,18 @@ local probe_tight_f = {x = 0, y = 0, z = 0}
 local probe_sh_r = {x = 0, y = 0, z = 0}
 local probe_sh_l = {x = 0, y = 0, z = 0}
 
+-- Pre-allocated probe vectors for flight steering, climb assist, repulsion & buoyancy
+local probe_climb_0 = {x = 0, y = 0, z = 0}
+local probe_climb_1 = {x = 0, y = 0, z = 0}
+local probe_climb_2 = {x = 0, y = 0, z = 0}
+local probe_repulse = {x = 0, y = 0, z = 0}
+local probe_repulse_x = {x = 0, y = 0, z = 0}
+local probe_repulse_y = {x = 0, y = 0, z = 0}
+local probe_repulse_z = {x = 0, y = 0, z = 0}
+local probe_buoy_cur = {x = 0, y = 0, z = 0}
+local probe_buoy_under = {x = 0, y = 0, z = 0}
+local probe_passable = {x = 0, y = 0, z = 0}
+
 -- Pre-allocated static trick action arrays to prevent per-tick GC allocations
 local EVASIVE_TRICKS = {"flip_side", "flip_side_left", "flip_back"}
 local EVASIVE_TRICKS_COMBAT = {"flip_back", "flip_side", "spin_around"}
@@ -162,8 +175,16 @@ end
 local function pick_flight_waypoint(pos, home_pos, cur_yaw)
 	-- 35% chance to seek a nearby flower to flutter towards
 	if math.random() < 0.35 then
-		local minp = {x = pos.x - 9, y = pos.y - 3, z = pos.z - 9}
-		local maxp = {x = pos.x + 9, y = pos.y + 3, z = pos.z + 9}
+		local minp = {
+			x = math.floor(pos.x - 9),
+			y = math.floor(pos.y - 3),
+			z = math.floor(pos.z - 9),
+		}
+		local maxp = {
+			x = math.floor(pos.x + 9),
+			y = math.floor(pos.y + 3),
+			z = math.floor(pos.z + 9),
+		}
 		local flowers = core.find_nodes_in_area(minp, maxp, {"group:flower", "group:flora"})
 		if flowers and #flowers > 0 then
 			local filtered = {}
@@ -194,7 +215,7 @@ local function pick_flight_waypoint(pos, home_pos, cur_yaw)
 		local odx = cand_x - home_pos.x
 		local odz = cand_z - home_pos.z
 		if (odx * odx + odz * odz) > 784 then
-			local back_angle = math.atan2(home_pos.z - pos.z, home_pos.x - pos.x)
+			local back_angle = atan2(home_pos.z - pos.z, home_pos.x - pos.x)
 			cand_x = pos.x + math.cos(back_angle) * (5.0 + math.random() * 3.5)
 			cand_z = pos.z + math.sin(back_angle) * (5.0 + math.random() * 3.5)
 		end
@@ -268,11 +289,13 @@ local function step_depenetration_and_buoyancy(self, dtime, pos)
 		end
 
 		if not best_air_x then
+			probe_passable.x = rx
+			probe_passable.z = rz
 			for dy = 1, 8 do
-				local uy = ry + dy
-				if is_passable_node({x = rx, y = uy, z = rz}, true) then
+				probe_passable.y = ry + dy
+				if is_passable_node(probe_passable, true) then
 					best_air_x = rx
-					best_air_y = uy
+					best_air_y = probe_passable.y
 					best_air_z = rz
 					break
 				end
@@ -300,11 +323,17 @@ local function step_depenetration_and_buoyancy(self, dtime, pos)
 	local p_floor_x = math.floor(pos.x + 0.5)
 	local p_floor_y = math.floor(pos.y + 0.5)
 	local p_floor_z = math.floor(pos.z + 0.5)
-	local cur_node = core.get_node_or_nil({x = p_floor_x, y = p_floor_y, z = p_floor_z})
+	probe_buoy_cur.x = p_floor_x
+	probe_buoy_cur.y = p_floor_y
+	probe_buoy_cur.z = p_floor_z
+	local cur_node = core.get_node_or_nil(probe_buoy_cur)
 	local cur_def = cur_node and core.registered_nodes[cur_node.name]
 	local in_liquid = cur_def and cur_def.liquidtype and cur_def.liquidtype ~= "none"
 
-	local under_node = core.get_node_or_nil({x = p_floor_x, y = math.floor(pos.y - 0.25 + 0.5), z = p_floor_z})
+	probe_buoy_under.x = p_floor_x
+	probe_buoy_under.y = math.floor(pos.y - 0.25 + 0.5)
+	probe_buoy_under.z = p_floor_z
+	local under_node = core.get_node_or_nil(probe_buoy_under)
 	local under_def = under_node and core.registered_nodes[under_node.name]
 	local touching_liquid = under_def and under_def.liquidtype and under_def.liquidtype ~= "none"
 
@@ -431,7 +460,7 @@ local function step_companion_perks(self, dtime, pos, owner_player)
 
 	-- Survival Triage: +2 HP every 8 seconds when damaged (Requires Tier 2)
 	if loyalty >= 2 then
-		self.heal_timer = self.heal_timer + dtime
+		self.heal_timer = (self.heal_timer or 0) + dtime
 		if self.heal_timer >= 8.0 then
 			self.heal_timer = 0
 			local player_hp = owner_player:get_hp()
@@ -458,14 +487,21 @@ local function step_companion_perks(self, dtime, pos, owner_player)
 		local closest_threat_name = nil
 		local closest_threat_obj = nil
 
+		-- Periodic threat alert expiration pruning every 10 seconds
+		if now - (cache._last_prune or 0) > 10.0 then
+			cache._last_prune = now
+			for k, expire_time in pairs(cache.recent_alerts) do
+				if now >= expire_time then
+					cache.recent_alerts[k] = nil
+				end
+			end
+		end
+
 		local can_reuse_cache = false
 		cache.player_scans = cache.player_scans or {}
 		local p_scan = cache.player_scans[self.owner_name]
 		if p_scan and (now - p_scan.time < 1.2) then
-			local p_dx = ppos.x - p_scan.pos.x
-			local p_dy = ppos.y - p_scan.pos.y
-			local p_dz = ppos.z - p_scan.pos.z
-			can_reuse_cache = (p_dx * p_dx + p_dy * p_dy + p_dz * p_dz <= 36.0)
+			can_reuse_cache = (pixie.utils.dist_sq(ppos, p_scan.pos) <= 36.0)
 		end
 
 		local candidate_threats = {}
@@ -499,7 +535,7 @@ local function step_companion_perks(self, dtime, pos, owner_player)
 		for i = 1, #candidate_threats do
 			local t = candidate_threats[i]
 			local tp = t.pos
-			local td_sq = (tp.x - ppos.x)^2 + (tp.y - ppos.y)^2 + (tp.z - ppos.z)^2
+			local td_sq = pixie.utils.dist_sq(tp, ppos)
 			if td_sq < closest_threat_dist_sq then
 				closest_threat_dist_sq = td_sq
 				closest_threat_pos = tp
@@ -802,7 +838,7 @@ local function step_follow_mode(self, dtime, pos, owner_player)
 	local target_orbit_vel = self._orbit_dir * (1.3 + math.min(1.2, p_speed * 0.18))
 	self._orbit_vel = self._orbit_vel or (self._orbit_dir * 1.4)
 	self._orbit_vel = self._orbit_vel + (target_orbit_vel - self._orbit_vel) * math.min(1.0, dtime * 2.2)
-	self.orbit_t = self.orbit_t + dtime * self._orbit_vel
+	self.orbit_t = (self.orbit_t or 0) + dtime * self._orbit_vel
 
 	-- Shoulder Perch Kinematics
 	local preferred_side = self._shoulder_side or 1
@@ -925,8 +961,16 @@ local function step_follow_mode(self, dtime, pos, owner_player)
 		local roll = math.random()
 		if roll < 0.15 then
 			-- Nearby decorative flower inspection (keeps eye-level elevation without diving into dirt)
-			local minp = {x = ppos.x - 4, y = ppos.y - 1, z = ppos.z - 4}
-			local maxp = {x = ppos.x + 4, y = ppos.y + 2, z = ppos.z + 4}
+			local minp = {
+				x = math.floor(ppos.x - 4),
+				y = math.floor(ppos.y - 1),
+				z = math.floor(ppos.z - 4),
+			}
+			local maxp = {
+				x = math.floor(ppos.x + 4),
+				y = math.floor(ppos.y + 2),
+				z = math.floor(ppos.z + 4),
+			}
 			local flowers = core.find_nodes_in_area(minp, maxp, {"group:flower"})
 			if flowers and #flowers > 0 then
 				local fl = flowers[math.random(#flowers)]
@@ -1296,9 +1340,10 @@ local function step_wild_mode(self, dtime, pos)
 		if p and p:is_valid() then
 			local pp = p:get_pos()
 			if pp then
-				local pd_sq = (pos.x - pp.x)^2 + (pos.y - pp.y)^2 + (pos.z - pp.z)^2
+				local pd_sq = pixie.utils.dist_sq(pos, pp)
 				if pd_sq <= enticed_dist_sq then
-					local item = p:get_wielded_item():get_name()
+					local wielded = p.get_wielded_item and p:get_wielded_item()
+					local item = (wielded and wielded.get_name and wielded:get_name()) or ""
 					if is_taming_food(item) then
 						enticed_player = p
 						enticed_dist_sq = pd_sq
@@ -1489,13 +1534,25 @@ local function step_flight_steering(self, dtime, pos, anchor_pos, is_moving_fast
 		local f_ny = math.floor(pos.y + 0.5)
 		local f_nz = math.floor(pos.z + f_dir_z * f_probe_dist + 0.5)
 
-		if is_walkable_node({x = f_nx, y = f_ny, z = f_nz}) then
-			if is_passable_node({x = f_nx, y = f_ny + 1, z = f_nz}, true) then
+		probe_climb_0.x = f_nx
+		probe_climb_0.y = f_ny
+		probe_climb_0.z = f_nz
+
+		if is_walkable_node(probe_climb_0) then
+			probe_climb_1.x = f_nx
+			probe_climb_1.y = f_ny + 1
+			probe_climb_1.z = f_nz
+			if is_passable_node(probe_climb_1, true) then
 				desired_vel.y = math.max(desired_vel.y, 2.4)
 				steer_rate = math.max(steer_rate, 8.0)
-			elseif is_passable_node({x = f_nx, y = f_ny + 2, z = f_nz}, true) then
-				desired_vel.y = math.max(desired_vel.y, 3.2)
-				steer_rate = math.max(steer_rate, 9.0)
+			else
+				probe_climb_2.x = f_nx
+				probe_climb_2.y = f_ny + 2
+				probe_climb_2.z = f_nz
+				if is_passable_node(probe_climb_2, true) then
+					desired_vel.y = math.max(desired_vel.y, 3.2)
+					steer_rate = math.max(steer_rate, 9.0)
+				end
 			end
 		end
 	end
@@ -1505,19 +1562,33 @@ local function step_flight_steering(self, dtime, pos, anchor_pos, is_moving_fast
 	local sep_x, sep_y, sep_z = x_mob_core.calculate_repulsion(self, pos, 1.35, 3.2, true)
 
 	if sep_x ~= 0 or sep_y ~= 0 or sep_z ~= 0 then
-		local test_pos = {
-			x = math.floor(pos.x + sep_x * 0.25 + 0.5),
-			y = math.floor(pos.y + sep_y * 0.25 + 0.5),
-			z = math.floor(pos.z + sep_z * 0.25 + 0.5),
-		}
-		if is_walkable_node(test_pos) then
-			if is_walkable_node({x = test_pos.x, y = math.floor(pos.y + 0.5), z = math.floor(pos.z + 0.5)}) then
+		probe_repulse.x = math.floor(pos.x + sep_x * 0.25 + 0.5)
+		probe_repulse.y = math.floor(pos.y + sep_y * 0.25 + 0.5)
+		probe_repulse.z = math.floor(pos.z + sep_z * 0.25 + 0.5)
+
+		if is_walkable_node(probe_repulse) then
+			local floor_py = math.floor(pos.y + 0.5)
+			local floor_px = math.floor(pos.x + 0.5)
+			local floor_pz = math.floor(pos.z + 0.5)
+
+			probe_repulse_x.x = probe_repulse.x
+			probe_repulse_x.y = floor_py
+			probe_repulse_x.z = floor_pz
+			if is_walkable_node(probe_repulse_x) then
 				sep_x = 0
 			end
-			if is_walkable_node({x = math.floor(pos.x + 0.5), y = math.floor(pos.y + 0.5), z = test_pos.z}) then
+
+			probe_repulse_z.x = floor_px
+			probe_repulse_z.y = floor_py
+			probe_repulse_z.z = probe_repulse.z
+			if is_walkable_node(probe_repulse_z) then
 				sep_z = 0
 			end
-			if is_walkable_node({x = math.floor(pos.x + 0.5), y = test_pos.y, z = math.floor(pos.z + 0.5)}) then
+
+			probe_repulse_y.x = floor_px
+			probe_repulse_y.y = probe_repulse.y
+			probe_repulse_y.z = floor_pz
+			if is_walkable_node(probe_repulse_y) then
 				sep_y = 0
 			end
 		end
@@ -1630,7 +1701,7 @@ x_mob_core.register_mob("pixie:pixie", {
 		local label
 		local nametag_text = ""
 		local show_nametag = (self.show_nametag ~= false)
-		if core.settings:get_bool("pixie_show_nametags", true) == false then
+		if pixie.config and pixie.config.show_nametags == false then
 			show_nametag = false
 		end
 
@@ -1942,6 +2013,13 @@ x_mob_core.register_mob("pixie:pixie", {
 	end,
 
 	on_death = function(self, _killer)
+		-- Multiplayer Pet Griefing & Farming Defense: Tamed pixies never drop loot.
+		-- Also respects server admin setting pixie_enable_drops.
+		local enable_drops = (pixie.config and pixie.config.enable_drops) ~= false
+		if self.owner_name or not enable_drops then
+			self._drops_spawned = true
+		end
+
 		if self.owner_name then
 			pixie.bonding.active_player_pixies[self.owner_name] = nil
 			local owner = core.get_player_by_name(self.owner_name)
@@ -2157,12 +2235,18 @@ x_mob_core.register_mob("pixie:pixie", {
 })
 
 -- Solitary Worldwide Spawn Registration
+local setting_spawn_chance = (pixie.config and pixie.config.spawn_chance) or 4200
+local setting_active_count = (pixie.config and pixie.config.spawn_active_max) or 2
+local setting_min_elev = (pixie.config and pixie.config.spawn_min_elevation) or 1
+
 x_mob_core.register_spawn("pixie:pixie", {
 	nodes = pixie.compat.get_spawn_nodes(),
-	chance = 8500,
-	active_object_count = 1,
+	chance = setting_spawn_chance,
+	active_object_count = setting_active_count,
 	group_min = 1,
 	group_max = 1,
-	min_light = 3,
+	min_light = 5,
 	max_light = 15,
+	min_elevation = setting_min_elev,
+	max_elevation = 31000,
 })

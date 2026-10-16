@@ -123,6 +123,10 @@ function compat.is_hostile(obj, owner_player)
 		return false, ""
 	end
 
+	if ent.is_dead or ent.state == "dying" or ent.state == "die" then
+		return false, ""
+	end
+
 	local hp = ent.hp or obj:get_hp()
 	if hp and hp <= 0 then
 		return false, ""
