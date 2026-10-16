@@ -1,7 +1,7 @@
 {
   "name": "pixie",
   "version": "1.0.0",
-  "description": "Mystical glowing fairy companion featuring dynamic lighting, high-value ore prospecting, and player death guidance.",
+  "description": "A magical fairy companion that brightens dark caves, sniffs out buried ores, warns you of approaching monsters, and rescues you from fatal blows.",
   "main": "init.lua",
   "type": "module",
   "engines": {

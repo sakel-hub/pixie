@@ -2,9 +2,11 @@
 
 [![ContentDB](https://content.luanti.org/packages/SaKeL/pixie/shields/title/)](https://content.luanti.org/packages/SaKeL/pixie/)
 [![ContentDB Downloads](https://content.luanti.org/packages/SaKeL/pixie/shields/downloads/)](https://content.luanti.org/packages/SaKeL/pixie/)
+![Luanti](https://img.shields.io/badge/Luanti-5.10%2B-5599ff.svg)
+[![Luacheck](https://img.shields.io/github/actions/workflow/status/sakel-hub/pixie/luacheck.yml?label=Luacheck&logo=lua)](https://github.com/sakel-hub/pixie/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.txt)
 [![Media License: CC-BY-4.0](https://img.shields.io/badge/Media-CC--BY--4.0-lightgrey.svg)](LICENSE.txt)
-![Luanti](https://img.shields.io/badge/Luanti-5.17.0%2B-5599ff.svg)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/sakel-hub/pixie/pulls)
 ![AI-Assisted](https://img.shields.io/badge/AI--assisted-gray)
 
 An enchanted glowing fairy companion for **Luanti** that accompanies you on all your travels! The mystical pixie illuminates pitch-black caverns with a warm personal light, sniffs out hidden ore veins deep underground, alerts you when monsters are creeping close, heals your wounds during perilous battles, and even makes the ultimate sacrifice as a Guardian Angel to rescue you from fatal blows.
@@ -172,13 +174,17 @@ You can customize the mod's balance in your world settings (`settingtypes.txt`):
 
 | Setting | Default | Description |
 | :--- | :---: | :--- |
-| `pixie_show_nametags` | `true` | Show floating name tags above tamed companions. |
-| `pixie_light_natural_threshold` | `12` | Sunlight level above which the personal lantern turns down to conserve energy. |
-| `pixie_ore_max_y` | `64` | Maximum underground depth for the ore sniffer radar. |
+| `pixie_show_nametags` | `true` | Show or hide floating name tags above tamed pixie companions. |
+| `pixie_light_natural_threshold` | `12` | Sunlight level above which the personal lantern turns off to save energy. |
+| `pixie_ore_max_y` | `64` | Maximum height for underground ore detection (only sniffs out ores below this level). |
 | `pixie_loyalty_tier2_time` | `1200` | Journey seconds (20 mins) needed to reach Tier 2 (Loyal Companion). |
 | `pixie_loyalty_tier3_time` | `3600` | Journey seconds (60 mins) needed to reach Tier 3 (Ancient Guardian). |
-| `pixie_whistle_durability` | `30` | Number of musical calls before a Fairy Whistle dissolves into fairy dust. |
-| `pixie_combat_retreat_duration` | `8.0` | How long (in seconds) the companion stays in high combat perch after a battle. |
+| `pixie_whistle_durability` | `30` | Number of times the Fairy Whistle can be used before dissolving into fairy dust. |
+| `pixie_combat_retreat_duration` | `8.0` | Time (in seconds) the companion stays safely perched behind your shoulder after a battle. |
+| `pixie_spawn_chance` | `4200` | Chance for a wild pixie to spawn during exploration (lower = more common, higher = rarer). |
+| `pixie_spawn_active_max` | `2` | Maximum number of active pixies allowed within a 48-block radius. |
+| `pixie_spawn_min_elevation` | `1` | Minimum elevation height for wild pixie spawning (1 = surface and above). |
+| `pixie_enable_drops` | `true` | Whether wild pixies drop floral traces and glowing stardust when defeated. |
 
 ---
 
