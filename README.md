@@ -2,7 +2,7 @@
 
 [![ContentDB](https://content.luanti.org/packages/SaKeL/pixie/shields/title/)](https://content.luanti.org/packages/SaKeL/pixie/)
 [![ContentDB Downloads](https://content.luanti.org/packages/SaKeL/pixie/shields/downloads/)](https://content.luanti.org/packages/SaKeL/pixie/)
-![Luanti](https://img.shields.io/badge/Luanti-5.10%2B-5599ff.svg)
+![Luanti](https://img.shields.io/badge/Luanti-5.17%2B-5599ff.svg)
 [![Luacheck](https://img.shields.io/github/actions/workflow/status/sakel-hub/pixie/luacheck.yml?label=Luacheck&logo=lua)](https://github.com/sakel-hub/pixie/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.txt)
 [![Media License: CC-BY-4.0](https://img.shields.io/badge/Media-CC--BY--4.0-lightgrey.svg)](LICENSE.txt)
