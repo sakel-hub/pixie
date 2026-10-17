@@ -643,4 +643,232 @@ local is_threat2, _ = pixie.compat.is_hostile(dead_flag_mob_obj, mock_player)
 assert(is_threat2 == false, "Test 19 Failed: Mob with is_dead == true must not be flagged as active hostile threat")
 print("Test 19: Centralized Configuration Registry & Hostile State Detection Verified.")
 
+-- Test 20: Comprehensive False Positive Prevention & Mob Validation
+-- 1. Status Effect Envelop (x_mob_core:envelop) targeting player
+local envelop_obj = {
+	is_valid = function() return true end,
+	is_player = function() return false end,
+	get_hp = function() return 1 end,
+	get_attach = function() return mock_player end,
+	get_luaentity = function()
+		return {
+			name = "x_mob_core:envelop",
+			_is_envelop = true,
+			target = mock_player,
+			effects = { test_freeze = { timer = 5.0 } },
+		}
+	end,
+}
+local env_threat, _ = pixie.compat.is_hostile(envelop_obj, mock_player)
+assert(env_threat == false, "Test 20 Failed: Envelop attached to player must not be flagged as hostile")
+
+-- Detached / mob-attached envelop
+local detached_envelop = {
+	is_valid = function() return true end,
+	is_player = function() return false end,
+	get_hp = function() return 1 end,
+	get_attach = function() return nil end,
+	get_luaentity = function()
+		return {
+			name = "x_mob_core:envelop",
+			_is_envelop = true,
+			target = mock_player,
+		}
+	end,
+}
+local env_threat2, _ = pixie.compat.is_hostile(detached_envelop, mock_player)
+assert(env_threat2 == false, "Test 20 Failed: Detached envelop entity targeting player must not be flagged as hostile")
+
+-- 2. 3D Health Bar entity
+local health_bar_obj = {
+	is_valid = function() return true end,
+	is_player = function() return false end,
+	get_hp = function() return 1 end,
+	get_attach = function() return nil end,
+	get_luaentity = function()
+		return {
+			name = "x_mob_core:health_bar",
+			_is_visual = true,
+			_is_health_bar = true,
+		}
+	end,
+}
+local hb_threat, _ = pixie.compat.is_hostile(health_bar_obj, mock_player)
+assert(hb_threat == false, "Test 20 Failed: Health bar entity must not be flagged as hostile")
+
+-- 3. Projectiles carrying hostile mob factions (e.g. Suture Golem Bile, Frost Shard)
+local projectile_obj = {
+	is_valid = function() return true end,
+	is_player = function() return false end,
+	get_hp = function() return 1 end,
+	get_attach = function() return nil end,
+	get_luaentity = function()
+		return {
+			name = "x_mobs:suture_golem_bile",
+			_is_projectile = true,
+			_is_arrow = true,
+			factions = { "undead", "golem", "subterranean" },
+		}
+	end,
+}
+local proj_threat, _ = pixie.compat.is_hostile(projectile_obj, mock_player)
+assert(proj_threat == false, "Test 20 Failed: Projectile with hostile factions must not be flagged as hostile mob")
+
+-- 4. Visual proxy, armor mesh, wielditem, and corpses
+local armor_corpse_obj = {
+	is_valid = function() return true end,
+	is_player = function() return false end,
+	get_hp = function() return 1 end,
+	get_attach = function() return nil end,
+	get_luaentity = function()
+		return {
+			name = "x_player_armor:corpse",
+			_is_corpse = true,
+			_is_x_player_armor = true,
+			_is_visual = true,
+		}
+	end,
+}
+local corpse_threat, _ = pixie.compat.is_hostile(armor_corpse_obj, mock_player)
+assert(corpse_threat == false, "Test 20 Failed: Armor corpse entity must not be flagged as hostile mob")
+
+-- 5. Dropped item and falling node
+local item_obj = {
+	is_valid = function() return true end,
+	is_player = function() return false end,
+	get_hp = function() return 1 end,
+	get_attach = function() return nil end,
+	get_luaentity = function()
+		return {
+			name = "__builtin:item",
+			itemstring = "default:apple",
+		}
+	end,
+}
+local item_threat, _ = pixie.compat.is_hostile(item_obj, mock_player)
+assert(item_threat == false, "Test 20 Failed: Builtin dropped item must not be flagged as hostile mob")
+
+-- 6. Generic object attached to player
+local attached_gear_obj = {
+	is_valid = function() return true end,
+	is_player = function() return false end,
+	get_hp = function() return 1 end,
+	get_attach = function() return mock_player end,
+	get_luaentity = function()
+		return {
+			name = "custom_mod:backpack",
+		}
+	end,
+}
+local gear_threat, _ = pixie.compat.is_hostile(attached_gear_obj, mock_player)
+assert(gear_threat == false, "Test 20 Failed: Object attached to owner_player must not be flagged as hostile mob")
+
+-- 7. Neutral / retaliatory farm animals (Cow, Panda, Kitten)
+local cow_obj = {
+	is_valid = function() return true end,
+	is_player = function() return false end,
+	get_hp = function() return 20 end,
+	get_attach = function() return nil end,
+	get_luaentity = function()
+		return {
+			name = "mobs_animal:cow",
+			type = "animal",
+			passive = false,
+			attack_type = "dogfight",
+		}
+	end,
+}
+local cow_threat, _ = pixie.compat.is_hostile(cow_obj, mock_player)
+assert(cow_threat == false, "Test 20 Failed: Peaceful unprovoked cow must not be flagged as hostile mob")
+
+local kitten_obj = {
+	is_valid = function() return true end,
+	is_player = function() return false end,
+	get_hp = function() return 10 end,
+	get_attach = function() return nil end,
+	get_luaentity = function()
+		return {
+			name = "mobs_animal:kitten",
+			type = "animal",
+			passive = false,
+			attack_players = false,
+			attack_type = "dogfight",
+		}
+	end,
+}
+local kitten_threat, _ = pixie.compat.is_hostile(kitten_obj, mock_player)
+assert(kitten_threat == false, "Test 20 Failed: Kitten must not be flagged as hostile mob")
+
+-- 8. Provoked animal actively attacking player
+local provoked_cow_obj = {
+	is_valid = function() return true end,
+	is_player = function() return false end,
+	get_hp = function() return 20 end,
+	get_attach = function() return nil end,
+	get_luaentity = function()
+		return {
+			name = "mobs_animal:cow",
+			type = "animal",
+			passive = false,
+			attack_type = "dogfight",
+			attack = mock_player,
+		}
+	end,
+}
+local prov_threat, prov_name = pixie.compat.is_hostile(provoked_cow_obj, mock_player)
+assert(prov_threat == true, "Test 20 Failed: Provoked cow attacking player must be flagged as threat")
+assert(prov_name == "Cow", "Test 20 Failed: Provoked cow title mismatch")
+
+-- 9. Player's tamed pet
+local pet_obj = {
+	is_valid = function() return true end,
+	is_player = function() return false end,
+	get_hp = function() return 25 end,
+	get_attach = function() return nil end,
+	get_luaentity = function()
+		return {
+			name = "animalia:wolf",
+			owner = mock_player:get_player_name(),
+			tamed = true,
+		}
+	end,
+}
+local pet_threat, _ = pixie.compat.is_hostile(pet_obj, mock_player)
+assert(pet_threat == false, "Test 20 Failed: Player's tamed pet must not be flagged as hostile threat")
+
+-- 10. Legitimate Hostile Monsters from x_mobs and mobs_monster
+local suture_golem_obj = {
+	is_valid = function() return true end,
+	is_player = function() return false end,
+	get_hp = function() return 120 end,
+	get_attach = function() return nil end,
+	get_luaentity = function()
+		return {
+			name = "x_mobs:suture_golem",
+			factions = { "undead", "golem", "subterranean" },
+		}
+	end,
+}
+local golem_threat, golem_title = pixie.compat.is_hostile(suture_golem_obj, mock_player)
+assert(golem_threat == true, "Test 20 Failed: Suture Golem must be flagged as hostile monster")
+assert(golem_title == "Suture Golem", "Test 20 Failed: Suture Golem title mismatch, got: " .. tostring(golem_title))
+
+local dm_obj = {
+	is_valid = function() return true end,
+	is_player = function() return false end,
+	get_hp = function() return 40 end,
+	get_attach = function() return nil end,
+	get_luaentity = function()
+		return {
+			name = "mobs_monster:dungeon_master",
+			type = "monster",
+			attack_type = "dogfight",
+		}
+	end,
+}
+local dm_threat, dm_title = pixie.compat.is_hostile(dm_obj, mock_player)
+assert(dm_threat == true, "Test 20 Failed: Dungeon Master must be flagged as hostile monster")
+assert(dm_title == "Dungeon Master", "Test 20 Failed: Dungeon Master title mismatch")
+print("Test 20: Comprehensive False Positive Prevention & Mob Validation Verified.")
+
 print("========== ALL TESTS PASSED SUCCESSFULLY! ==========")

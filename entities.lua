@@ -511,7 +511,8 @@ local function step_companion_perks(self, dtime, pos, owner_player)
 			local nearby_objs = core.get_objects_inside_radius(ppos, 14.0)
 			for i = 1, #nearby_objs do
 				local cand_obj = nearby_objs[i]
-				if cand_obj and cand_obj ~= self.object and cand_obj ~= owner_player then
+				if cand_obj and cand_obj ~= self.object and cand_obj ~= owner_player
+					and (not cand_obj.get_attach or cand_obj:get_attach() ~= owner_player) then
 					local is_threat, tname = pixie.compat.is_hostile(cand_obj, owner_player)
 					if is_threat then
 						local tp = cand_obj:get_pos()

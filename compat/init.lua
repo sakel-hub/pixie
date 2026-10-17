@@ -118,12 +118,42 @@ function compat.is_hostile(obj, owner_player)
 	if not obj or not obj:is_valid() then return false, "" end
 	if obj:is_player() then return false, "" end
 
+	-- Exclude anything directly attached to the player (armor meshes, wield items, visual sleeves, HUDs)
+	if obj.get_attach and owner_player and owner_player:is_valid() then
+		local parent = obj:get_attach()
+		if parent == owner_player then
+			return false, ""
+		end
+	end
+
 	local ent = obj:get_luaentity()
 	if not ent or ent.name == "pixie:pixie" then
 		return false, ""
 	end
 
-	if ent.is_dead or ent.state == "dying" or ent.state == "die" then
+	-- Exclude status visual sleeves / envelops, health bars, visual proxies, armor entities, items, corpses
+	if ent._is_envelop or ent._is_health_bar or ent._is_visual
+		or ent._is_visual_proxy or ent._is_wielditem or ent._is_x_player_armor
+		or ent._is_item or ent._is_hologram or ent._csm_ignore
+		or ent._is_corpse
+		or ent.name == "x_mob_core:envelop" or ent.name == "x_mob_core:health_bar"
+		or ent.name == "__builtin:item" or ent.name == "__builtin:falling_node"
+		or ent.name:find(":envelop") or ent.name:find("trophy_hologram") then
+		return false, ""
+	end
+
+	-- Exclude projectiles, ammunition, spells, and arrows
+	if ent._is_projectile or ent._is_arrow or ent._is_bullet
+		or ent._is_fireball or ent._is_spell
+		or ent.name:find(":arrow") or ent.name:find("_arrow$")
+		or ent.name:find("_projectile$")
+		or (ent.velocity and (ent.hit_player or ent.hit_node or ent.hit_mob)) then
+		return false, ""
+	end
+
+	-- Exclude dead, dying, or corpse entities
+	if ent.is_dead or ent.dead or ent._dead
+		or ent.state == "dying" or ent.state == "die" or ent.state == "dead" then
 		return false, ""
 	end
 
@@ -132,22 +162,44 @@ function compat.is_hostile(obj, owner_player)
 		return false, ""
 	end
 
-	-- Do not alert on the player's own tamed companions or pets
-	local owner_name = owner_player and owner_player:get_player_name()
-	if owner_name then
-		if ent.owner_name == owner_name or ent.owner == owner_name then
+	-- Do not alert on the player's own tamed companions, mounts, or pets
+	local owner_name = owner_player and owner_player:is_valid() and owner_player:get_player_name()
+	if owner_name and owner_name ~= "" then
+		if ent.owner_name == owner_name or ent.owner == owner_name or ent._owner == owner_name then
+			return false, ""
+		end
+		if ent.tamed == true and (not ent.owner or ent.owner == "" or ent.owner == owner_name or ent.owner_name == owner_name) then
 			return false, ""
 		end
 	end
 
+	-- Check x_mob_core allegiance subsystem if present
+	if x_mob_core and x_mob_core.are_allies and owner_player and owner_player:is_valid() then
+		if x_mob_core.are_allies(obj, owner_player) then
+			return false, ""
+		end
+	end
+
+	-- Known hostile entities registered in compat registries
 	local known_title = compat.hostiles[ent.name]
 	if known_title then
 		return true, known_title
 	end
 
-	-- Mobs Redo / generic monster type or aggressive attack type
+	-- Entities explicitly configured to never attack players (e.g. kittens, passive critters)
+	if ent.attack_players == false or ent.attacks_players == false then
+		return false, ""
+	end
+
+	-- Passive mobs that do not fight
+	if ent.passive == true then
+		return false, ""
+	end
+
+	-- Mobs Redo / generic monster type or aggressive attack type (excluding neutral animals/NPCs)
 	if ent.type == "monster" or ent.type == "hostile"
-		or (ent.passive == false and (ent.attack_type == "dogfight" or ent.attack_type == "shoot")) then
+		or (ent.passive == false and ent.type ~= "animal" and ent.type ~= "npc"
+			and (ent.attack_type == "dogfight" or ent.attack_type == "shoot" or ent.attack_type == "dogshoot")) then
 		return true, format_entity_title(ent.name)
 	end
 
@@ -156,6 +208,7 @@ function compat.is_hostile(obj, owner_player)
 		return true, format_entity_title(ent.name)
 	end
 
+	-- Hostile faction memberships (e.g. undead, skeleton, fallen, cultist, monster, boss)
 	if ent.factions and type(ent.factions) == "table" then
 		for k, v in pairs(ent.factions) do
 			local f = (type(k) == "string" and k) or (type(v) == "string" and v)
@@ -165,9 +218,13 @@ function compat.is_hostile(obj, owner_player)
 		end
 	end
 
+	-- Active aggressive lock-on targeting the owner player
 	if owner_player and owner_player:is_valid() then
-		if ent.target == owner_player or ent.attack == owner_player
-			or ent._target == owner_player or ent.punch_target == owner_player then
+		local has_target_lock = (ent.target == owner_player or ent.attack == owner_player or ent._target == owner_player)
+		if has_target_lock then
+			return true, format_entity_title(ent.name)
+		end
+		if type(ent.punch_target) == "userdata" and ent.punch_target == owner_player then
 			return true, format_entity_title(ent.name)
 		end
 	end
